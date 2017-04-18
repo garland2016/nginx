@@ -286,7 +286,6 @@ ngx_http_v2_init(ngx_event_t *rev)
                                             : ngx_http_v2_state_preface;
 
     ngx_queue_init(&h2c->waiting);
-    ngx_queue_init(&h2c->posted);
     ngx_queue_init(&h2c->dependencies);
     ngx_queue_init(&h2c->closed);
 
@@ -420,9 +419,7 @@ static void
 ngx_http_v2_write_handler(ngx_event_t *wev)
 {
     ngx_int_t                  rc;
-    ngx_queue_t               *q;
     ngx_connection_t          *c;
-    ngx_http_v2_stream_t      *stream;
     ngx_http_v2_connection_t  *h2c;
 
     c = wev->data;
@@ -455,26 +452,6 @@ ngx_http_v2_write_handler(ngx_event_t *wev)
     if (rc == NGX_ERROR) {
         ngx_http_v2_finalize_connection(h2c, 0);
         return;
-    }
-
-    while (!ngx_queue_empty(&h2c->posted)) {
-        q = ngx_queue_head(&h2c->posted);
-
-        ngx_queue_remove(q);
-
-        stream = ngx_queue_data(q, ngx_http_v2_stream_t, queue);
-
-        stream->handled = 0;
-
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "run http2 stream %ui", stream->node->id);
-
-        wev = stream->request->connection->write;
-
-        wev->active = 0;
-        wev->ready = 1;
-
-        wev->handler(wev);
     }
 
     h2c->blocked = 0;
@@ -806,8 +783,11 @@ ngx_http_v2_state_head(ngx_http_v2_connection_t *h2c, u_char *pos, u_char *end)
 static u_char *
 ngx_http_v2_state_data(ngx_http_v2_connection_t *h2c, u_char *pos, u_char *end)
 {
+    size_t                 size;
     ngx_http_v2_node_t    *node;
     ngx_http_v2_stream_t  *stream;
+
+    size = h2c->state.length;
 
     if (h2c->state.flags & NGX_HTTP_V2_PADDED_FLAG) {
 
@@ -825,33 +805,33 @@ ngx_http_v2_state_data(ngx_http_v2_connection_t *h2c, u_char *pos, u_char *end)
         }
 
         h2c->state.padding = *pos++;
-        h2c->state.length--;
 
-        if (h2c->state.padding > h2c->state.length) {
+        if (h2c->state.padding >= size) {
             ngx_log_error(NGX_LOG_INFO, h2c->connection->log, 0,
                           "client sent padded DATA frame "
                           "with incorrect length: %uz, padding: %uz",
-                          h2c->state.length, h2c->state.padding);
+                          size, h2c->state.padding);
 
-            return ngx_http_v2_connection_error(h2c, NGX_HTTP_V2_SIZE_ERROR);
+            return ngx_http_v2_connection_error(h2c,
+                                                NGX_HTTP_V2_PROTOCOL_ERROR);
         }
 
-        h2c->state.length -= h2c->state.padding;
+        h2c->state.length -= 1 + h2c->state.padding;
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, h2c->connection->log, 0,
                    "http2 DATA frame");
 
-    if (h2c->state.length > h2c->recv_window) {
+    if (size > h2c->recv_window) {
         ngx_log_error(NGX_LOG_INFO, h2c->connection->log, 0,
                       "client violated connection flow control: "
                       "received DATA frame length %uz, available window %uz",
-                      h2c->state.length, h2c->recv_window);
+                      size, h2c->recv_window);
 
         return ngx_http_v2_connection_error(h2c, NGX_HTTP_V2_FLOW_CTRL_ERROR);
     }
 
-    h2c->recv_window -= h2c->state.length;
+    h2c->recv_window -= size;
 
     if (h2c->recv_window < NGX_HTTP_V2_MAX_WINDOW / 4) {
 
@@ -877,11 +857,11 @@ ngx_http_v2_state_data(ngx_http_v2_connection_t *h2c, u_char *pos, u_char *end)
 
     stream = node->stream;
 
-    if (h2c->state.length > stream->recv_window) {
+    if (size > stream->recv_window) {
         ngx_log_error(NGX_LOG_INFO, h2c->connection->log, 0,
                       "client violated flow control for stream %ui: "
                       "received DATA frame length %uz, available window %uz",
-                      node->id, h2c->state.length, stream->recv_window);
+                      node->id, size, stream->recv_window);
 
         if (ngx_http_v2_terminate_stream(h2c, stream,
                                          NGX_HTTP_V2_FLOW_CTRL_ERROR)
@@ -894,7 +874,7 @@ ngx_http_v2_state_data(ngx_http_v2_connection_t *h2c, u_char *pos, u_char *end)
         return ngx_http_v2_state_skip_padded(h2c, pos, end);
     }
 
-    stream->recv_window -= h2c->state.length;
+    stream->recv_window -= size;
 
     if (stream->no_flow_control
         && stream->recv_window < NGX_HTTP_V2_MAX_WINDOW / 4)
@@ -961,7 +941,7 @@ ngx_http_v2_state_read_data(ngx_http_v2_connection_t *h2c, u_char *pos,
 
     if (size >= h2c->state.length) {
         size = h2c->state.length;
-        stream->in_closed  = h2c->state.flags & NGX_HTTP_V2_END_STREAM_FLAG;
+        stream->in_closed = h2c->state.flags & NGX_HTTP_V2_END_STREAM_FLAG;
     }
 
     r = stream->request;
@@ -1076,7 +1056,8 @@ ngx_http_v2_state_headers(ngx_http_v2_connection_t *h2c, u_char *pos,
                           "with incorrect length: %uz, padding: %uz",
                           h2c->state.length, h2c->state.padding);
 
-            return ngx_http_v2_connection_error(h2c, NGX_HTTP_V2_SIZE_ERROR);
+            return ngx_http_v2_connection_error(h2c,
+                                                NGX_HTTP_V2_PROTOCOL_ERROR);
         }
 
         h2c->state.length -= h2c->state.padding;
@@ -1924,7 +1905,7 @@ ngx_http_v2_state_rst_stream(ngx_http_v2_connection_t *h2c, u_char *pos,
 
     if (node == NULL || node->stream == NULL) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, h2c->connection->log, 0,
-                        "unknown http2 stream");
+                       "unknown http2 stream");
 
         return ngx_http_v2_state_complete(h2c, pos, end);
     }
@@ -2038,6 +2019,7 @@ ngx_http_v2_state_settings_params(ngx_http_v2_connection_t *h2c, u_char *pos,
             break;
 
         case NGX_HTTP_V2_MAX_FRAME_SIZE_SETTING:
+
             if (value > NGX_HTTP_V2_MAX_FRAME_SIZE
                 || value < NGX_HTTP_V2_DEFAULT_FRAME_SIZE)
             {
@@ -2254,7 +2236,7 @@ ngx_http_v2_state_window_update(ngx_http_v2_connection_t *h2c, u_char *pos,
 
         stream = ngx_queue_data(q, ngx_http_v2_stream_t, queue);
 
-        stream->handled = 0;
+        stream->waiting = 0;
 
         wev = stream->request->connection->write;
 
@@ -3095,7 +3077,7 @@ ngx_http_v2_pseudo_header(ngx_http_request_t *r, ngx_http_v2_header_t *header)
     }
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                  "client sent unknown pseudo header \"%V\"",
+                  "client sent unknown pseudo-header \":%V\"",
                   &header->name);
 
     return NGX_DECLINED;
@@ -3242,14 +3224,14 @@ ngx_http_v2_parse_scheme(ngx_http_request_t *r, ngx_http_v2_header_t *header)
 {
     if (r->schema_start) {
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                      "client sent duplicate :schema header");
+                      "client sent duplicate :scheme header");
 
         return NGX_DECLINED;
     }
 
     if (header->value.len == 0) {
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                      "client sent empty :schema header");
+                      "client sent empty :scheme header");
 
         return NGX_DECLINED;
     }
@@ -3575,6 +3557,11 @@ ngx_http_v2_read_request_body(ngx_http_request_t *r,
         rb->buf = ngx_create_temp_buf(r->pool, (size_t) len);
 
     } else {
+        if (stream->preread) {
+            /* enforce writing preread buffer to file */
+            r->request_body_in_file_only = 1;
+        }
+
         rb->buf = ngx_calloc_buf(r->pool);
 
         if (rb->buf != NULL) {
@@ -4148,15 +4135,20 @@ ngx_http_v2_handle_connection_handler(ngx_event_t *rev)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, rev->log, 0,
                    "http2 handle connection handler");
 
+    c = rev->data;
+    h2c = c->data;
+
+    if (c->error) {
+        ngx_http_v2_finalize_connection(h2c, 0);
+        return;
+    }
+
     rev->handler = ngx_http_v2_read_handler;
 
     if (rev->ready) {
         ngx_http_v2_read_handler(rev);
         return;
     }
-
-    c = rev->data;
-    h2c = c->data;
 
     if (h2c->last_out && ngx_http_v2_send_output_queue(h2c) == NGX_ERROR) {
         ngx_http_v2_finalize_connection(h2c, 0);
@@ -4271,7 +4263,7 @@ ngx_http_v2_finalize_connection(ngx_http_v2_connection_t *h2c,
                 continue;
             }
 
-            stream->handled = 0;
+            stream->waiting = 0;
 
             r = stream->request;
             fc = r->connection;
@@ -4280,7 +4272,10 @@ ngx_http_v2_finalize_connection(ngx_http_v2_connection_t *h2c,
 
             if (stream->queued) {
                 stream->queued = 0;
+
                 ev = fc->write;
+                ev->active = 0;
+                ev->ready = 1;
 
             } else {
                 ev = fc->read;
