@@ -15,9 +15,9 @@
 
 
 typedef struct {
-    u_char                     *ip;     //指向待执行的脚本指令
+    u_char                     *ip;
     u_char                     *pos;
-    ngx_http_variable_value_t  *sp;     //变量值构成的栈，大小默认为10个变量值
+    ngx_http_variable_value_t  *sp;
 
     ngx_str_t                   buf;
     ngx_str_t                   line;
@@ -31,8 +31,8 @@ typedef struct {
     unsigned                    is_args:1;
     unsigned                    log:1;
 
-    ngx_int_t                   status;         //脚本引擎的执行状态
-    ngx_http_request_t         *request;        //指向当前脚本引擎所属的ngx_http_request_t
+    ngx_int_t                   status;
+    ngx_http_request_t         *request;
 } ngx_http_script_engine_t;
 
 
@@ -82,7 +82,7 @@ typedef struct {
 } ngx_http_compile_complex_value_t;
 
 
-typedef void (*ngx_http_script_code_pt) (ngx_http_script_engine_t *e);  //相当于接口
+typedef void (*ngx_http_script_code_pt) (ngx_http_script_engine_t *e);
 typedef size_t (*ngx_http_script_len_code_pt) (ngx_http_script_engine_t *e);
 
 
@@ -95,7 +95,7 @@ typedef struct {
 typedef struct {
     ngx_http_script_code_pt     code;
     uintptr_t                   index;
-} ngx_http_script_var_code_t;               //编译变量名结构体，复用index成员
+} ngx_http_script_var_code_t;
 
 
 typedef struct {
@@ -200,7 +200,7 @@ typedef struct {
     uintptr_t                   value;
     uintptr_t                   text_len;
     uintptr_t                   text_data;
-} ngx_http_script_value_code_t;             //编译变量值结构体，利用text_data、text_len成员
+} ngx_http_script_value_code_t;
 
 
 void ngx_http_script_flush_complex_value(ngx_http_request_t *r,

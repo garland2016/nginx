@@ -44,8 +44,8 @@ static ngx_command_t  ngx_regex_commands[] = {
 
 static ngx_core_module_t  ngx_regex_module_ctx = {
     ngx_string("regex"),
-    ngx_regex_create_conf,              //core module的 create_conf方法
-    ngx_regex_init_conf                 //core module的 init_conf方法
+    ngx_regex_create_conf,
+    ngx_regex_init_conf
 };
 
 

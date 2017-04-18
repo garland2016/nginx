@@ -150,8 +150,8 @@ static ngx_command_t  ngx_core_commands[] = {
 
 static ngx_core_module_t  ngx_core_module_ctx = {
     ngx_string("core"),
-    ngx_core_module_create_conf,                //core module的 create_conf方法
-    ngx_core_module_init_conf                   //core module的 init_conf方法
+    ngx_core_module_create_conf,
+    ngx_core_module_init_conf
 };
 
 

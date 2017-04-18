@@ -912,7 +912,7 @@ ngx_http_log_variable_compile(ngx_conf_t *cf, ngx_http_log_op_t *op,
     ngx_str_t *value)
 {
     ngx_int_t  index;
-    //通过变量名称获取变量的索引
+
     index = ngx_http_get_variable_index(cf, value);
     if (index == NGX_ERROR) {
         return NGX_ERROR;
@@ -921,7 +921,7 @@ ngx_http_log_variable_compile(ngx_conf_t *cf, ngx_http_log_op_t *op,
     op->len = 0;
     op->getlen = ngx_http_log_variable_getlen;
     op->run = ngx_http_log_variable;
-    op->data = index;       //保存变量的索引
+    op->data = index;
 
     return NGX_OK;
 }
@@ -952,7 +952,6 @@ ngx_http_log_variable(ngx_http_request_t *r, u_char *buf, ngx_http_log_op_t *op)
 {
     ngx_http_variable_value_t  *value;
 
-    //通过变量的索引得到变量
     value = ngx_http_get_indexed_variable(r, op->data);
 
     if (value == NULL || value->not_found) {

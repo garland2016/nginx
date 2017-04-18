@@ -148,13 +148,11 @@ ngx_conf_split_clients_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     name.len--;
     name.data++;
 
-    //添加变量
     var = ngx_http_add_variable(cf, &name, NGX_HTTP_VAR_CHANGEABLE);
     if (var == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    //设置回调
     var->get_handler = ngx_http_split_clients_variable;
     var->data = (uintptr_t) ctx;
 

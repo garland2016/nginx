@@ -76,13 +76,13 @@ typedef void (*ngx_output_chain_aio_pt)(ngx_output_chain_ctx_t *ctx,
     ngx_file_t *file);
 
 struct ngx_output_chain_ctx_s {
-    ngx_buf_t                   *buf;       //保存临时的buf
-    ngx_chain_t                 *in;        //保存了将要发送的chain
-    ngx_chain_t                 *free;      //保存了已经发送完毕的chain，以便于重复利用
-    ngx_chain_t                 *busy;      //保存了还未发送的chain
+    ngx_buf_t                   *buf;
+    ngx_chain_t                 *in;
+    ngx_chain_t                 *free;
+    ngx_chain_t                 *busy;
 
-    unsigned                     sendfile:1;        //sendfile标记
-    unsigned                     directio:1;        //directio标记
+    unsigned                     sendfile:1;
+    unsigned                     directio:1;
     unsigned                     unaligned:1;
     unsigned                     need_in_memory:1;
     unsigned                     need_in_temp:1;
@@ -104,13 +104,12 @@ struct ngx_output_chain_ctx_s {
     off_t                        alignment;
 
     ngx_pool_t                  *pool;
-    ngx_int_t                    allocated;         //已经分配的buf个数
-    ngx_bufs_t                   bufs;              //对应loc conf中设置的bufs
+    ngx_int_t                    allocated;
+    ngx_bufs_t                   bufs;
     ngx_buf_tag_t                tag;
 
-    ngx_output_chain_filter_pt   output_filter;     //一般是ngx_http_next_filter,也就是继续调用filter链
-    void                        *filter_ctx;        //当前filter的上下文，
-                                                    //这里是由于upstream也会调用output_chain
+    ngx_output_chain_filter_pt   output_filter;
+    void                        *filter_ctx;
 };
 
 
@@ -148,10 +147,7 @@ ngx_chain_t *ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs);
 #define ngx_alloc_buf(pool)  ngx_palloc(pool, sizeof(ngx_buf_t))
 #define ngx_calloc_buf(pool) ngx_pcalloc(pool, sizeof(ngx_buf_t))
 
-//从pool中分配chain
 ngx_chain_t *ngx_alloc_chain_link(ngx_pool_t *pool);
-
-//链接cl到pool->chain中
 #define ngx_free_chain(pool, cl)                                             \
     cl->next = pool->chain;                                                  \
     pool->chain = cl

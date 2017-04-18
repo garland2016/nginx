@@ -245,12 +245,7 @@ ngx_http_geoip_addr(ngx_http_request_t *r, ngx_http_geoip_conf_t *gcf)
 
     addr.sockaddr = r->connection->sockaddr;
     addr.socklen = r->connection->socklen;
-    addr.name = r->connection->addr_text;
-
-    //garland test geoip
-    if (!ngx_strncmp(addr.name.data,"172.",4)){
-        return 3396084075;
-    }
+    /* addr.name = r->connection->addr_text; */
 
     xfwd = &r->headers_in.x_forwarded_for;
 
@@ -287,10 +282,6 @@ ngx_http_geoip_addr(ngx_http_request_t *r, ngx_http_geoip_conf_t *gcf)
     }
 
     sin = (struct sockaddr_in *) addr.sockaddr;
-
-    //u_long tmp = ntohl(sin->sin_addr.s_addr);
-    //printf("xfwd->nelts = %ld gcf->proxies = %p add.name = %s return = %ld \r\n",
-    //                        xfwd->nelts,gcf->proxies,addr.name.data,tmp);
     return ntohl(sin->sin_addr.s_addr);
 }
 
@@ -718,7 +709,7 @@ ngx_http_geoip_country(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     switch (gcf->country->databaseType) {
 
     case GEOIP_COUNTRY_EDITION:
-        //printf("ngx_http_geoip_country OK !\r\n");
+
         return NGX_CONF_OK;
 
 #if (NGX_HAVE_GEOIP_V6)
@@ -835,7 +826,7 @@ ngx_http_geoip_city(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     case GEOIP_CITY_EDITION_REV0:
     case GEOIP_CITY_EDITION_REV1:
-        //printf("ngx_http_geoip_city OK !\r\n");
+
         return NGX_CONF_OK;
 
 #if (NGX_HAVE_GEOIP_V6)

@@ -50,7 +50,6 @@ ngx_destroy_pool(ngx_pool_t *pool)
     ngx_pool_large_t    *l;
     ngx_pool_cleanup_t  *c;
 
-    //处理 ngx_pool_cleanup_t的特殊需求的内存的释放
     for (c = pool->cleanup; c; c = c->next) {
         if (c->handler) {
             ngx_log_debug1(NGX_LOG_DEBUG_ALLOC, pool->log, 0,
@@ -81,14 +80,12 @@ ngx_destroy_pool(ngx_pool_t *pool)
 
 #endif
 
-    //释放分配large的内存空间
     for (l = pool->large; l; l = l->next) {
         if (l->alloc) {
             ngx_free(l->alloc);
         }
     }
 
-    //最后释放pool中的内存
     for (p = pool, n = pool->d.next; /* void */; p = n, n = n->d.next) {
         ngx_free(p);
 

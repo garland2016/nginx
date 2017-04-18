@@ -421,12 +421,10 @@ ngx_http_geo_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         name.len--;
         name.data++;
 
-    } 
-    else {
+    } else {
         geo->index = -1;
     }
 
-    printf("geo name = %s \r\n",name.data);
     var = ngx_http_add_variable(cf, &name, NGX_HTTP_VAR_CHANGEABLE);
     if (var == NULL) {
         return NGX_CONF_ERROR;
@@ -513,8 +511,7 @@ ngx_http_geo_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         ngx_destroy_pool(ctx.temp_pool);
         ngx_destroy_pool(pool);
 
-    } 
-    else {
+    } else {
         if (ctx.tree == NULL) {
             ctx.tree = ngx_radix_tree_create(cf->pool, -1);
             if (ctx.tree == NULL) {
@@ -613,8 +610,9 @@ ngx_http_geo(ngx_conf_t *cf, ngx_command_t *dummy, void *conf)
     }
 
     if (ngx_strcmp(value[0].data, "include") == 0) {
+
         rv = ngx_http_geo_include(cf, ctx, &value[1]);
-        printf("rv = %p \r\n",rv);
+
         goto done;
 
     } else if (ngx_strcmp(value[0].data, "proxy") == 0) {
@@ -1341,8 +1339,7 @@ ngx_http_geo_include(ngx_conf_t *cf, ngx_http_geo_conf_ctx_t *ctx,
         return NGX_CONF_ERROR;
     }
 
-    //ngx_sprintf(file.data, "%V.bin%Z", name);
-    ngx_sprintf(file.data, "%V", name);
+    ngx_sprintf(file.data, "%V.bin%Z", name);
 
     if (ngx_conf_full_name(cf->cycle, &file, 1) != NGX_OK) {
         return NGX_CONF_ERROR;

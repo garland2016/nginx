@@ -21,8 +21,8 @@ static ngx_stream_upstream_rr_peers_t *ngx_stream_upstream_zone_copy_peers(
 static ngx_command_t  ngx_stream_upstream_zone_commands[] = {
 
     { ngx_string("zone"),
-      NGX_STREAM_UPS_CONF|NGX_CONF_TAKE12,  //NGX_HTTP_UPS_CONF 表示该指令的适用范围是upstream{}
-      ngx_stream_upstream_zone,             //钩子函数
+      NGX_STREAM_UPS_CONF|NGX_CONF_TAKE12,
+      ngx_stream_upstream_zone,
       0,
       0,
       NULL },
@@ -72,8 +72,6 @@ ngx_stream_upstream_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
-    //printf("value[1] = %s\r\n",value[1].data);
-
     if (!value[1].len) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid zone name \"%V\"", &value[1]);
@@ -99,14 +97,12 @@ ngx_stream_upstream_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         size = 0;
     }
 
-    //创建一个共享内存
     uscf->shm_zone = ngx_shared_memory_add(cf, &value[1], size,
                                            &ngx_stream_upstream_module);
     if (uscf->shm_zone == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    //注册自己的共享内存初始化函数
     uscf->shm_zone->init = ngx_stream_upstream_init_zone;
     uscf->shm_zone->data = umcf;
 
@@ -169,7 +165,6 @@ ngx_stream_upstream_init_zone(ngx_shm_zone_t *shm_zone, void *data)
             continue;
         }
 
-        //拷贝uscf 的upstream配置 数据到共享内存中去
         peers = ngx_stream_upstream_zone_copy_peers(shpool, uscf);
         if (peers == NULL) {
             return NGX_ERROR;

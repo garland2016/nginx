@@ -708,7 +708,7 @@ ngx_hash_keys_array_init(ngx_hash_keys_arrays_t *ha, ngx_uint_t type)
     return NGX_OK;
 }
 
-//把ngx_http_core_variables中的所有变量添加到variables_keys中
+
 ngx_int_t
 ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
     ngx_uint_t flags)
@@ -780,7 +780,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
         if (!(flags & NGX_HASH_READONLY_KEY)) {
             key->data[i] = ngx_tolower(key->data[i]);
         }
-        k = ngx_hash(k, key->data[i]);  //通过变量名来进行hash
+        k = ngx_hash(k, key->data[i]);
     }
 
     k %= ha->hsize;
@@ -814,16 +814,16 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
         return NGX_ERROR;
     }
 
-    *name = *key;   //把key表示的变量名插入到variables_keys的keys_hash数组中
+    *name = *key;
 
     hk = ngx_array_push(&ha->keys);
     if (hk == NULL) {
         return NGX_ERROR;
     }
 
-    hk->key = *key; //把key表示的变量名插入到variables_keys的keys数组中
+    hk->key = *key;
     hk->key_hash = ngx_hash_key(key->data, last);
-    hk->value = value;  //保存变量的指针 做为 value
+    hk->value = value;
 
     return NGX_OK;
 

@@ -960,6 +960,7 @@ ngx_stream_proxy_send_proxy_protocol(ngx_stream_session_t *s)
 
         ngx_log_error(NGX_LOG_ERR, c->log, 0,
                       "could not send PROXY protocol header at once");
+
         ngx_stream_proxy_finalize(s, NGX_STREAM_INTERNAL_SERVER_ERROR);
 
         return NGX_ERROR;
@@ -1095,6 +1096,7 @@ ngx_stream_proxy_ssl_handshake(ngx_connection_t *pc)
     }
 
 failed:
+
     ngx_stream_proxy_next_upstream(s);
 }
 
@@ -1228,6 +1230,7 @@ ngx_stream_proxy_resolve_handler(ngx_resolver_ctx_t *ctx)
                       "%V could not be resolved (%i: %s)",
                       &ctx->name, ctx->state,
                       ngx_resolver_strerror(ctx->state));
+
         ngx_stream_proxy_finalize(s, NGX_STREAM_INTERNAL_SERVER_ERROR);
         return;
     }
@@ -1471,6 +1474,7 @@ ngx_stream_proxy_process(ngx_stream_session_t *s, ngx_uint_t from_upstream,
         ngx_log_error(NGX_LOG_INFO, c->log, 0, "disconnected on shutdown");
 
         c->log->handler = handler;
+
         ngx_stream_proxy_finalize(s, NGX_STREAM_OK);
         return;
     }
@@ -1505,10 +1509,10 @@ ngx_stream_proxy_process(ngx_stream_session_t *s, ngx_uint_t from_upstream,
 
                 if (rc == NGX_ERROR) {
                     if (c->type == SOCK_DGRAM && !from_upstream) {
-                        printf("7\r\n");
                         ngx_stream_proxy_next_upstream(s);
                         return;
                     }
+
                     ngx_stream_proxy_finalize(s, NGX_STREAM_OK);
                     return;
                 }
@@ -1551,7 +1555,6 @@ ngx_stream_proxy_process(ngx_stream_session_t *s, ngx_uint_t from_upstream,
 
             if (n == NGX_ERROR) {
                 if (c->type == SOCK_DGRAM && u->received == 0) {
-                    printf("8\r\n");
                     ngx_stream_proxy_next_upstream(s);
                     return;
                 }
@@ -1626,6 +1629,7 @@ ngx_stream_proxy_process(ngx_stream_session_t *s, ngx_uint_t from_upstream,
                       s->received, c->sent, u->received, pc ? pc->sent : 0);
 
         c->log->handler = handler;
+
         ngx_stream_proxy_finalize(s, NGX_STREAM_OK);
         return;
     }
@@ -1670,9 +1674,6 @@ ngx_stream_proxy_next_upstream(ngx_stream_session_t *s)
     if (u->upstream_out || u->upstream_busy || (pc && pc->buffered)) {
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
                       "pending buffers on next upstream");
-        printf("u->upstream_out = %p u->upstream_busy = %p pc = %p pc->buffered = %d \r\n",
-        u->upstream_out,u->upstream_busy,pc,pc->buffered);
-
         ngx_stream_proxy_finalize(s, NGX_STREAM_INTERNAL_SERVER_ERROR);
         return;
     }
@@ -1723,6 +1724,7 @@ ngx_stream_proxy_finalize(ngx_stream_session_t *s, ngx_uint_t rc)
 {
     ngx_connection_t       *pc;
     ngx_stream_upstream_t  *u;
+
     ngx_log_debug1(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
                    "finalize stream proxy: %i", rc);
 

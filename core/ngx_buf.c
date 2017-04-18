@@ -43,7 +43,7 @@ ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
     return b;
 }
 
-//从pool中分配chain
+
 ngx_chain_t *
 ngx_alloc_chain_link(ngx_pool_t *pool)
 {
@@ -56,7 +56,6 @@ ngx_alloc_chain_link(ngx_pool_t *pool)
         return cl;
     }
 
-    //如果pool->chain为空，则创建一个新的返回
     cl = ngx_palloc(pool, sizeof(ngx_chain_t));
     if (cl == NULL) {
         return NULL;
@@ -158,20 +157,18 @@ ngx_chain_get_free_buf(ngx_pool_t *p, ngx_chain_t **free)
 {
     ngx_chain_t  *cl;
 
-    if (*free) {    //如果free链表里有的话，就从free链表中取出一个返回
+    if (*free) {
         cl = *free;
         *free = cl->next;
         cl->next = NULL;
         return cl;
     }
 
-    //分配一个chain
     cl = ngx_alloc_chain_link(p);
     if (cl == NULL) {
         return NULL;
     }
 
-    //给chain 分配一个buf
     cl->buf = ngx_calloc_buf(p);
     if (cl->buf == NULL) {
         return NULL;

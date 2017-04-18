@@ -567,7 +567,6 @@ ngx_http_create_request(ngx_connection_t *c)
 
     cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
-    //创建为这个请求缓存变量值的数组
     r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts
                                         * sizeof(ngx_http_variable_value_t));
     if (r->variables == NULL) {
@@ -636,7 +635,6 @@ ngx_http_ssl_handshake(ngx_event_t *rev)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, rev->log, 0,
                    "http check ssl handshake");
 
-    //判断连接是否超时，如果超时则关闭连接
     if (rev->timedout) {
         ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
         ngx_http_close_connection(c);
@@ -650,7 +648,6 @@ ngx_http_ssl_handshake(ngx_event_t *rev)
 
     size = hc->proxy_protocol ? sizeof(buf) : 1;
 
-    //首字节预读：从tcp连接中查看一个字节,若tcp连接中没有准备好的数据，则重新添加读事件退出等待新数据到来
     n = recv(c->fd, (char *) buf, size, MSG_PEEK);
 
     err = ngx_socket_errno;
@@ -707,8 +704,6 @@ ngx_http_ssl_handshake(ngx_event_t *rev)
         buf[0] = *p;
     }
 
-    //若成功查看1个字节数据，通过该首字节来探测接受到的数据是ssl握手包还是http数据
-    //根据ssl协议规定，ssl握手包的首字节中包含有ssl协议的版本信息
     if (n == 1) {
         if (buf[0] & 0x80 /* SSLv2 */ || buf[0] == 0x16 /* SSLv3/TLSv1 */) {
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, rev->log, 0,
@@ -717,7 +712,6 @@ ngx_http_ssl_handshake(ngx_event_t *rev)
             sscf = ngx_http_get_module_srv_conf(hc->conf_ctx,
                                                 ngx_http_ssl_module);
 
-            //创建ngx_ssl_connection_t并初始化openssl库中关于ssl连接的初始化
             if (ngx_ssl_create_connection(&sscf->ssl, c, NGX_SSL_BUFFER)
                 != NGX_OK)
             {
@@ -725,20 +719,8 @@ ngx_http_ssl_handshake(ngx_event_t *rev)
                 return;
             }
 
-            /*
-            * 调用ngx_ssl_handshake函数进行ssl握手，连接双方会在ssl握手时交换相
-            * 关数据(ssl版本，ssl加密算法，server端的公钥等) 并正式建立起ssl连接。
-            * ngx_ssl_handshake函数内部对openssl库进行了封装。
-            * 调用SSL_do_handshake()来进行握手，并根据其返回值判断ssl握手是否完成
-            * 或者出错。
-            */
             rc = ngx_ssl_handshake(c);
 
-            /*
-            * ssl握手可能需要多次数据交互才能完成。
-            * 如果ssl握手没有完成，ngx_ssl_handshake会根据具体情况(如需要读取更
-            * 多的握手数据包，或者需要发送握手数据包）来重新添加读写事件
-            */
             if (rc == NGX_AGAIN) {
 
                 if (!rev->timer_set) {
@@ -751,10 +733,6 @@ ngx_http_ssl_handshake(ngx_event_t *rev)
                 return;
             }
 
-            /*
-            * 若ssl握手完成或者出错，ngx_ssl_handshake会返回NGX_OK或者NGX_ERROR, 然后调用
-            * ngx_http_ssl_handshake_handler以继续处理
-            */
             ngx_http_ssl_handshake_handler(c);
 
             return;
@@ -2223,7 +2201,7 @@ ngx_http_request_handler(ngx_event_t *ev)
     ngx_http_run_posted_requests(c);
 }
 
-//顺序的遍历主请求的posted_requests链表
+
 void
 ngx_http_run_posted_requests(ngx_connection_t *c)
 {
@@ -2232,36 +2210,31 @@ ngx_http_run_posted_requests(ngx_connection_t *c)
 
     for ( ;; ) {
 
-        //连接已经断开，直接返回
         if (c->destroyed) {
             return;
         }
 
-        //ngx_connection_t的data指针保存了ngx_http_request_t的指针
         r = c->data;
-
-        //从posted_requests链表的头结点开始遍历
         pr = r->main->posted_requests;
+
         if (pr == NULL) {
             return;
         }
 
-        //从链表中移除即将要遍历的节点
         r->main->posted_requests = pr->next;
 
-        r = pr->request;    //得到该节点中保存的请求
+        r = pr->request;
 
         ngx_http_set_log_request(c->log, r);
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                        "http posted request: \"%V?%V\"", &r->uri, &r->args);
 
-        //遍历该节点（请求）
         r->write_event_handler(r);
     }
 }
 
-//将该子请求挂载在主请求的posted_requests
+
 ngx_int_t
 ngx_http_post_request(ngx_http_request_t *r, ngx_http_posted_request_t *pr)
 {
@@ -2314,7 +2287,6 @@ ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
         return;
     }
 
-    //如果当前请求是一个子请求，检查它是否有回调handler，有的话执行之
     if (r != r->main && r->post_subrequest) {
         rc = r->post_subrequest->handler(r, r->post_subrequest->data, rc);
     }
@@ -2362,15 +2334,10 @@ ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
         return;
     }
 
-    //是一个子请求
     if (r != r->main) {
 
-        //该子请求还有未处理完的数据或者子请求
         if (r->buffered || r->postponed) {
 
-            /* 添加一个该子请求的写事件，并设置合适的write event hander，
-               以便下次写事件来的时候继续处理，这里实际上下次执行时会调用ngx_http_output_filter函数，
-               最终还是会进入ngx_http_postpone_filter进行处理 */
             if (ngx_http_set_write_handler(r) != NGX_OK) {
                 ngx_http_terminate_request(r, 0);
             }
@@ -2380,7 +2347,6 @@ ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
 
         pr = r->parent;
 
-        //该子请求已经处理完毕，如果它拥有发送数据的权利，则将权利移交给父请求
         if (r == c->data) {
 
             r->main->count--;
@@ -2403,13 +2369,10 @@ ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
 
             r->done = 1;
 
-            //如果该子请求不是提前完成，则从父请求的postponed链表中删除
             if (pr->postponed && pr->postponed->request == r) {
                 pr->postponed = pr->postponed->next;
             }
 
-            /* 将发送权利移交给父请求，父请求下次执行的时候会发送它的postponed链表中可以
-               发送的数据节点，或者将发送权利移交给它的下一个子请求 */
             c->data = pr;
 
         } else {
@@ -2418,10 +2381,6 @@ ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
                            "http finalize non-active request: \"%V?%V\"",
                            &r->uri, &r->args);
 
-            /* 到这里其实表明该子请求提前执行完成，而且它没有产生任何数据，则它下次再次获得
-               执行机会时，将会执行ngx_http_request_finalzier函数，它实际上是执行
-               ngx_http_finalzie_request（r,0），也就是什么都不干，直到轮到它发送数据时，
-               ngx_http_finalzie_request函数会将它从父请求的postponed链表中删除 */
             r->write_event_handler = ngx_http_request_finalizer;
 
             if (r->waited) {
@@ -2429,7 +2388,6 @@ ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
             }
         }
 
-        //将父请求加入posted_request队尾，获得一次运行机会
         if (ngx_http_post_request(pr, NULL) != NGX_OK) {
             r->main->count++;
             ngx_http_terminate_request(r, 0);
@@ -2443,9 +2401,6 @@ ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
         return;
     }
 
-    /* 这里是处理主请求结束的逻辑，如果主请求有未发送的数据或者未处理的子请求，
-       则给主请求添加写事件，并设置合适的write event hander，
-       以便下次写事件来的时候继续处理 */
     if (r->buffered || c->buffered || r->postponed || r->blocked) {
 
         if (ngx_http_set_write_handler(r) != NGX_OK) {
@@ -3346,7 +3301,7 @@ ngx_http_empty_handler(ngx_event_t *wev)
     return;
 }
 
-//空函数
+
 void
 ngx_http_request_empty_handler(ngx_http_request_t *r)
 {
@@ -3508,7 +3463,7 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
 
     log->action = "logging request";
 
-    ngx_http_log_request(r);            //运行LOG阶段的handler链里的所有handler方法 
+    ngx_http_log_request(r);
 
     log->action = "closing request";
 
@@ -3547,7 +3502,7 @@ ngx_http_free_request(ngx_http_request_t *r, ngx_int_t rc)
     ngx_destroy_pool(pool);
 }
 
-//运行LOG阶段的handler链里的所有handler方法
+
 static void
 ngx_http_log_request(ngx_http_request_t *r)
 {
@@ -3560,7 +3515,6 @@ ngx_http_log_request(ngx_http_request_t *r)
     log_handler = cmcf->phases[NGX_HTTP_LOG_PHASE].handlers.elts;
     n = cmcf->phases[NGX_HTTP_LOG_PHASE].handlers.nelts;
 
-    //遍历NGX_HTTP_LOG_PHASE阶段里的所有handler，依次执行，不会检查返回值
     for (i = 0; i < n; i++) {
         log_handler[i](r);
     }

@@ -670,7 +670,6 @@ ngx_http_fastcgi_handler(ngx_http_request_t *r)
     ngx_http_fastcgi_main_conf_t  *fmcf;
 #endif
 
-    //创建upstream数据结构
     if (ngx_http_upstream_create(r) != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -690,13 +689,11 @@ ngx_http_fastcgi_handler(ngx_http_request_t *r)
         }
     }
 
-    //2、设置模块的tag和schema。schema现在只会用于日志，tag会用于buf_chain管理
     u = r->upstream;
 
     ngx_str_set(&u->schema, "fastcgi://");
     u->output.tag = (ngx_buf_tag_t) &ngx_http_fastcgi_module;
 
-    //3、设置upstream的后端服务器列表数据结构
     u->conf = &flcf->upstream;
 
 #if (NGX_HTTP_CACHE)
@@ -706,7 +703,6 @@ ngx_http_fastcgi_handler(ngx_http_request_t *r)
     u->create_key = ngx_http_fastcgi_create_key;
 #endif
 
-    //4、设置upstream回调函数
     u->create_request = ngx_http_fastcgi_create_request;
     u->reinit_request = ngx_http_fastcgi_reinit_request;
     u->process_header = ngx_http_fastcgi_process_header;
@@ -716,17 +712,14 @@ ngx_http_fastcgi_handler(ngx_http_request_t *r)
 
     u->buffering = flcf->upstream.buffering;
 
-    //创建upstream的 pipe 
     u->pipe = ngx_pcalloc(r->pool, sizeof(ngx_event_pipe_t));
     if (u->pipe == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    //指定pipe的input_filter
     u->pipe->input_filter = ngx_http_fastcgi_input_filter;
     u->pipe->input_ctx = r;
 
-    //指定upstream的 input_filter_init 和 input_filter
     u->input_filter_init = ngx_http_fastcgi_input_filter_init;
     u->input_filter = ngx_http_fastcgi_non_buffered_filter;
     u->input_filter_ctx = r;
@@ -737,7 +730,6 @@ ngx_http_fastcgi_handler(ngx_http_request_t *r)
         r->request_body_no_buffering = 1;
     }
 
-    //6、完成upstream初始化并进行收尾工作
     rc = ngx_http_read_client_request_body(r, ngx_http_upstream_init);
 
     if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
@@ -3519,7 +3511,6 @@ ngx_http_fastcgi_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "is duplicate";
     }
 
-    //upstream模块的定势，被注册到了请求包处理11个阶段的content phase阶段
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
 
     clcf->handler = ngx_http_fastcgi_handler;
@@ -3530,7 +3521,6 @@ ngx_http_fastcgi_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
-    //拿到配置的url，也就是FastCGI Server的地址+端口
     url = &value[1];
 
     n = ngx_http_script_variables_count(url);

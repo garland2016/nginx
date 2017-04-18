@@ -1118,13 +1118,12 @@ ngx_ssl_ecdh_curve(ngx_conf_t *cf, ngx_ssl_t *ssl, ngx_str_t *name)
     return NGX_OK;
 }
 
-//为ssl连接建立做准备
+
 ngx_int_t
 ngx_ssl_create_connection(ngx_ssl_t *ssl, ngx_connection_t *c, ngx_uint_t flags)
 {
     ngx_ssl_connection_t  *sc;
 
-    //ngx_ssl_connection_t是nginx对ssl连接的描述结构，记录了ssl连接的信息和状态
     sc = ngx_pcalloc(c->pool, sizeof(ngx_ssl_connection_t));
     if (sc == NULL) {
         return NGX_ERROR;
@@ -1135,7 +1134,6 @@ ngx_ssl_create_connection(ngx_ssl_t *ssl, ngx_connection_t *c, ngx_uint_t flags)
 
     sc->session_ctx = ssl->ctx;
 
-    //创建openssl库中对ssl连接的描述结构
     sc->connection = SSL_new(ssl->ctx);
 
     if (sc->connection == NULL) {
@@ -1143,22 +1141,18 @@ ngx_ssl_create_connection(ngx_ssl_t *ssl, ngx_connection_t *c, ngx_uint_t flags)
         return NGX_ERROR;
     }
 
-    //关联(openssl库)ssl连接到tcp连接对应的socket
     if (SSL_set_fd(sc->connection, c->fd) == 0) {
         ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "SSL_set_fd() failed");
         return NGX_ERROR;
     }
 
     if (flags & NGX_SSL_CLIENT) {
-        //upstream中发起对后端的ssl连接，指明nginx ssl连接是客户端
         SSL_set_connect_state(sc->connection);
 
     } else {
-        //指明nginx ssl连接是服务端
         SSL_set_accept_state(sc->connection);
     }
 
-    //关联(openssl库)ssl连接到用户数据(当前连接c)
     if (SSL_set_ex_data(sc->connection, ngx_ssl_connection_index, c) == 0) {
         ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "SSL_set_ex_data() failed");
         return NGX_ERROR;
@@ -1183,13 +1177,7 @@ ngx_ssl_set_session(ngx_connection_t *c, ngx_ssl_session_t *session)
     return NGX_OK;
 }
 
-/*
-* 调用ngx_ssl_handshake函数进行ssl握手，连接双方会在ssl握手时交换相
-* 关数据(ssl版本，ssl加密算法，server端的公钥等) 并正式建立起ssl连接。
-* ngx_ssl_handshake函数内部对openssl库进行了封装。
-* 调用SSL_do_handshake()来进行握手，并根据其返回值判断ssl握手是否完成
-* 或者出错。
-*/
+
 ngx_int_t
 ngx_ssl_handshake(ngx_connection_t *c)
 {
@@ -1202,7 +1190,6 @@ ngx_ssl_handshake(ngx_connection_t *c)
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0, "SSL_do_handshake: %d", n);
 
-    //返回1表示ssl握手成功
     if (n == 1) {
 
         if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
@@ -1447,7 +1434,7 @@ ngx_ssl_recv(ngx_connection_t *c, u_char *buf, size_t size)
 
     for ( ;; ) {
 
-        n = SSL_read(c->ssl->connection, buf, size);    //调用openssl库函数SSL_read()来读取并解密数据
+        n = SSL_read(c->ssl->connection, buf, size);
 
         ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0, "SSL_read: %d", n);
 
@@ -1628,7 +1615,6 @@ ngx_ssl_send_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
                 continue;
             }
 
-            //调用openssl库SSL_write函数来加密并发送数据
             n = ngx_ssl_write(c, in->buf->pos, in->buf->last - in->buf->pos);
 
             if (n == NGX_ERROR) {
@@ -1778,7 +1764,7 @@ ngx_ssl_write(ngx_connection_t *c, u_char *data, size_t size)
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0, "SSL to write: %uz", size);
 
-    n = SSL_write(c->ssl->connection, data, size);      //调用openssl库SSL_write函数来加密并发送数据
+    n = SSL_write(c->ssl->connection, data, size);
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0, "SSL_write: %d", n);
 
@@ -2360,8 +2346,6 @@ ngx_ssl_session_cache_init(ngx_shm_zone_t *shm_zone, void *data)
         return NGX_OK;
     }
 
-    //shm.addr里存放着共享内存的首地址：ngx_slab_pool_t结构体
-    //将共享内存初始地址转换为ngx_slab_pool_t指针,保存在配置文件中，后面就是用这个shpool来分配与释放共享内存
     shpool = (ngx_slab_pool_t *) shm_zone->shm.addr;
 
     if (shm_zone->shm.exists) {
@@ -2374,7 +2358,6 @@ ngx_ssl_session_cache_init(ngx_shm_zone_t *shm_zone, void *data)
         return NGX_ERROR;
     }
 
-    //把刚分配好的内存地址 指向 ngx_slab_pool_t的data成员
     shpool->data = cache;
     shm_zone->data = cache;
 

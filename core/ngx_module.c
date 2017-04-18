@@ -53,7 +53,6 @@ ngx_cycle_modules(ngx_cycle_t *cycle)
         return NGX_ERROR;
     }
 
-    //初始化所有模块，设置模块的数量
     ngx_memcpy(cycle->modules, ngx_modules,
                ngx_modules_n * sizeof(ngx_module_t *));
 
@@ -68,8 +67,6 @@ ngx_init_modules(ngx_cycle_t *cycle)
 {
     ngx_uint_t  i;
 
-    //提交新的cycle配置，并调用所有模块的init_module
-    //实际上只有ngx_event_core_module模块定义了该callback，即只有ngx_event_module_init()被调用
     for (i = 0; cycle->modules[i]; i++) {
         if (cycle->modules[i]->init_module) {
             if (cycle->modules[i]->init_module(cycle) != NGX_OK) {

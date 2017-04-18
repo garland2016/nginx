@@ -82,7 +82,7 @@ ngx_module_t  ngx_http_copy_filter_module = {
 
 static ngx_http_output_body_filter_pt    ngx_http_next_body_filter;
 
-//copy filter的过滤函数
+
 static ngx_int_t
 ngx_http_copy_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
@@ -96,9 +96,9 @@ ngx_http_copy_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http copy filter: \"%V?%V\"", &r->uri, &r->args);
-    //获取ctx
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_copy_filter_module);
-    //如果为空，则说明需要初始化ctx
+
     if (ctx == NULL) {
         ctx = ngx_pcalloc(r->pool, sizeof(ngx_output_chain_ctx_t));
         if (ctx == NULL) {
@@ -149,7 +149,7 @@ ngx_http_copy_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ctx->aio = r->aio;
 #endif
 
-    rc = ngx_output_chain(ctx, in);     //最关键的函数
+    rc = ngx_output_chain(ctx, in);
 
     if (ctx->in == NULL) {
         r->buffered &= ~NGX_HTTP_COPY_BUFFERED;

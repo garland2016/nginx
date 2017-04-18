@@ -153,7 +153,7 @@ static ngx_int_t ngx_http_variable_time_local(ngx_http_request_t *r,
  * ngx_http_variable_unknown_header_in(), but for performance reasons
  * they are handled using dedicated entries
  */
-//nginx 自定义变量
+
 static ngx_http_variable_t  ngx_http_core_variables[] = {
 
     { ngx_string("http_host"), NULL, ngx_http_variable_header,
@@ -233,10 +233,10 @@ static ngx_http_variable_t  ngx_http_core_variables[] = {
       offsetof(ngx_http_request_t, args),
       NGX_HTTP_VAR_NOCACHEABLE, 0 },
 
-    { ngx_string("args"),                           //name
-      ngx_http_variable_set_args,                   //set handler
-      ngx_http_variable_request,                    //get handler
-      offsetof(ngx_http_request_t, args),           //offset
+    { ngx_string("args"),
+      ngx_http_variable_set_args,
+      ngx_http_variable_request,
+      offsetof(ngx_http_request_t, args),
       NGX_HTTP_VAR_CHANGEABLE|NGX_HTTP_VAR_NOCACHEABLE, 0 },
 
     { ngx_string("is_args"), NULL, ngx_http_variable_is_args,
@@ -365,7 +365,7 @@ ngx_http_variable_value_t  ngx_http_variable_null_value =
 ngx_http_variable_value_t  ngx_http_variable_true_value =
     ngx_http_variable("1");
 
-//将变量添加到variables_keys中去
+
 ngx_http_variable_t *
 ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
 {
@@ -436,7 +436,7 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
     return v;
 }
 
-//将变量添加到variables中
+
 ngx_int_t
 ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
 {
@@ -452,10 +452,9 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
-    //得到variabled数组的首指针
     v = cmcf->variables.elts;
 
-    if (v == NULL) {    //如果为空则创建这个数组
+    if (v == NULL) {
         if (ngx_array_init(&cmcf->variables, cf->pool, 4,
                            sizeof(ngx_http_variable_t))
             != NGX_OK)
@@ -471,11 +470,10 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
                 continue;
             }
 
-            return i;   //如果找到这个变量，则返回它的索引
+            return i;
         }
     }
 
-    //如果未找到这个变量，则向variables数组中添加一个
     v = ngx_array_push(&cmcf->variables);
     if (v == NULL) {
         return NGX_ERROR;
@@ -493,7 +491,7 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
     v->get_handler = NULL;
     v->data = 0;
     v->flags = 0;
-    v->index = cmcf->variables.nelts - 1;   //变量的索引
+    v->index = cmcf->variables.nelts - 1;
 
     return v->index;
 }
@@ -568,7 +566,7 @@ ngx_http_get_variable(ngx_http_request_t *r, ngx_str_t *name, ngx_uint_t key)
     v = ngx_hash_find(&cmcf->variables_hash, key, name->data, name->len);
 
     if (v) {
-        if (v->flags & NGX_HTTP_VAR_INDEXED) {  //检查这个变量是否被索引过
+        if (v->flags & NGX_HTTP_VAR_INDEXED) {
             return ngx_http_get_flushed_variable(r, v->index);
 
         } else {
@@ -664,7 +662,6 @@ ngx_http_variable_request(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 {
     ngx_str_t  *s;
 
-    //ngx_http_variable_value_t 的data 是从ngx_http_request_t中获取的
     s = (ngx_str_t *) ((char *) r + data);
 
     if (s->data) {
@@ -672,7 +669,7 @@ ngx_http_variable_request(ngx_http_request_t *r, ngx_http_variable_value_t *v,
         v->valid = 1;
         v->no_cacheable = 0;
         v->not_found = 0;
-        v->data = s->data;  //获取到变量的值
+        v->data = s->data;
 
     } else {
         v->not_found = 1;
@@ -753,7 +750,6 @@ ngx_http_variable_header(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 {
     ngx_table_elt_t  *h;
 
-    //data偏移量就是解析的过的ngx_table_elt_t类型的成员，在ngx_http_request_t结构体中的偏移量
     h = *(ngx_table_elt_t **) ((char *) r + data);
 
     if (h) {
@@ -888,17 +884,17 @@ ngx_http_variable_unknown_header(ngx_http_variable_value_t *v, ngx_str_t *var,
     ngx_uint_t        i, n;
     ngx_table_elt_t  *header;
 
-    header = part->elts;        //链表结点的实际数据区指针
+    header = part->elts;
 
     for (i = 0; /* void */ ; i++) {
 
-        if (i >= part->nelts) {             //链表中实际存放的元素个数
+        if (i >= part->nelts) {
             if (part->next == NULL) {
                 break;
             }
 
-            part = part->next;              //指向list中的下一结点
-            header = part->elts;            //指向list中的下一结点的实际数据区指针
+            part = part->next;
+            header = part->elts;
             i = 0;
         }
 
@@ -1217,7 +1213,6 @@ ngx_http_variable_remote_port(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    //获取变量的值，是一个端口号
     port = ngx_inet_get_port(r->connection->sockaddr);
 
     if (port > 0 && port < 65536) {
@@ -1386,7 +1381,7 @@ ngx_http_variable_set_args(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data)
 {
     r->args.len = v->len;
-    r->args.data = v->data;     //直接设置ngx_http_request_t对应的值
+    r->args.data = v->data;
     r->valid_unparsed_uri = 0;
 }
 
@@ -2489,7 +2484,6 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
-    //创建保存nginx 自定义变量的数组
     cmcf->variables_keys = ngx_pcalloc(cf->temp_pool,
                                        sizeof(ngx_hash_keys_arrays_t));
     if (cmcf->variables_keys == NULL) {
@@ -2499,7 +2493,6 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
     cmcf->variables_keys->pool = cf->pool;
     cmcf->variables_keys->temp_pool = cf->pool;
 
-    //初始化保存自定义变量的数组
     if (ngx_hash_keys_array_init(cmcf->variables_keys, NGX_HASH_SMALL)
         != NGX_OK)
     {
@@ -2514,7 +2507,6 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
 
         *v = *cv;
 
-        //把ngx_http_core_variables中的所有变量添加到variables_keys中
         rc = ngx_hash_add_key(cmcf->variables_keys, &v->name, v,
                               NGX_HASH_READONLY_KEY);
 
@@ -2533,7 +2525,7 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
     return NGX_OK;
 }
 
-//变量的初始化
+
 ngx_int_t
 ngx_http_variables_init_vars(ngx_conf_t *cf)
 {
@@ -2550,7 +2542,6 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
     v = cmcf->variables.elts;
     key = cmcf->variables_keys->keys.elts;
 
-    // 会检测variables中的变量是否在variables_keys中
     for (i = 0; i < cmcf->variables.nelts; i++) {
 
         for (n = 0; n < cmcf->variables_keys->keys.nelts; n++) {
@@ -2578,7 +2569,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
         }
 
         if (v[i].name.len >= 5
-            && ngx_strncmp(v[i].name.data, "http_", 5) == 0)    //请求中的http头部
+            && ngx_strncmp(v[i].name.data, "http_", 5) == 0)
         {
             v[i].get_handler = ngx_http_variable_unknown_header_in;
             v[i].data = (uintptr_t) &v[i].name;
@@ -2587,7 +2578,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
         }
 
         if (v[i].name.len >= 10
-            && ngx_strncmp(v[i].name.data, "sent_http_", 10) == 0)  //发送响应中的http头部
+            && ngx_strncmp(v[i].name.data, "sent_http_", 10) == 0)
         {
             v[i].get_handler = ngx_http_variable_unknown_header_out;
             v[i].data = (uintptr_t) &v[i].name;
@@ -2596,7 +2587,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
         }
 
         if (v[i].name.len >= 14
-            && ngx_strncmp(v[i].name.data, "upstream_http_", 14) == 0)  //后端服务器http响应头部
+            && ngx_strncmp(v[i].name.data, "upstream_http_", 14) == 0)
         {
             v[i].get_handler = ngx_http_upstream_header_variable;
             v[i].data = (uintptr_t) &v[i].name;
@@ -2606,7 +2597,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
         }
 
         if (v[i].name.len >= 7
-            && ngx_strncmp(v[i].name.data, "cookie_", 7) == 0)  //cookies头部的某个项
+            && ngx_strncmp(v[i].name.data, "cookie_", 7) == 0)
         {
             v[i].get_handler = ngx_http_variable_cookie;
             v[i].data = (uintptr_t) &v[i].name;
@@ -2625,7 +2616,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
         }
 
         if (v[i].name.len >= 4
-            && ngx_strncmp(v[i].name.data, "arg_", 4) == 0) //请求的url参数
+            && ngx_strncmp(v[i].name.data, "arg_", 4) == 0)
         {
             v[i].get_handler = ngx_http_variable_argument;
             v[i].data = (uintptr_t) &v[i].name;

@@ -35,7 +35,7 @@ static u_char  ngx_empty_gif[] = {
     0x01, 0x00,                    /* logical screen width                   */
     0x01, 0x00,                    /* logical screen height                  */
     0x80,                          /* global 1-bit color table               */
-    0x00,                          /* background color #1                    */
+    0x01,                          /* background color #1                    */
     0x00,                          /* no aspect ratio                        */
 
                                    /* global color table                     */
@@ -50,7 +50,7 @@ static u_char  ngx_empty_gif[] = {
                                    /*     no disposal specified,             */
                                    /*     user input is not expected         */
     0x00, 0x00,                    /* delay time                             */
-    0x00,                          /* transparent color #1                   */
+    0x01,                          /* transparent color #1                   */
     0x00,                          /* block terminator                       */
 
                                    /* image descriptor                       */
@@ -133,9 +133,7 @@ ngx_http_empty_gif(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_core_loc_conf_t  *clcf;
 
-    //被注册到了请求包处理11个阶段的content phase阶段
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
-
     clcf->handler = ngx_http_empty_gif_handler;
 
     return NGX_CONF_OK;

@@ -42,7 +42,7 @@ static void ngx_linux_sendfile_thread_handler(void *data, ngx_log_t *log);
 
 #define NGX_SENDFILE_MAXSIZE  2147483647L
 
-//第一个参数是当前的连接，第二个参数是所需要发送的chain，第三个参数是所能发送的最大值
+
 ngx_chain_t *
 ngx_linux_sendfile_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 {

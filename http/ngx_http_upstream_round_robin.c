@@ -14,10 +14,8 @@
                                     + ((p)->next ? (p)->next->number : 0))
 
 
-//从所有的服务器中选出权值最高的服务器。
-//如果所有server当前权重都为0，那么将所有server的当前权重恢复到设定权重值。
 static ngx_http_upstream_rr_peer_t *ngx_http_upstream_get_peer(
-                        ngx_http_upstream_rr_peer_data_t *rrp);
+    ngx_http_upstream_rr_peer_data_t *rrp);
 
 #if (NGX_HTTP_SSL)
 
@@ -37,17 +35,15 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
     ngx_uint_t                     i, j, n, w;
     ngx_http_upstream_server_t    *server;
     ngx_http_upstream_rr_peer_t   *peer, **peerp;
-    //一个正常的server,一个是backup的server
     ngx_http_upstream_rr_peers_t  *peers, *backup;
 
-    //upstream中服务器节点的初始化
     us->peer.init = ngx_http_upstream_init_round_robin_peer;
 
     if (us->servers) {
         server = us->servers->elts;
 
-        n = 0;      //所有服务器数量
-        w = 0;      //所有服务器的权重之和
+        n = 0;
+        w = 0;
 
         for (i = 0; i < us->servers->nelts; i++) {
             if (server[i].backup) {
@@ -65,19 +61,16 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
             return NGX_ERROR;
         }
 
-        //为peers分配内存
         peers = ngx_pcalloc(cf->pool, sizeof(ngx_http_upstream_rr_peers_t));
         if (peers == NULL) {
             return NGX_ERROR;
         }
 
-        //分配一个peer结点
         peer = ngx_pcalloc(cf->pool, sizeof(ngx_http_upstream_rr_peer_t) * n);
         if (peer == NULL) {
             return NGX_ERROR;
         }
 
-        //peers的各项信息
         peers->single = (n == 1);
         peers->number = n;
         peers->weighted = (w != n);
@@ -87,7 +80,6 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
         n = 0;
         peerp = &peers->peer;
 
-        //初始化每个peer节点的信息
         for (i = 0; i < us->servers->nelts; i++) {
             if (server[i].backup) {
                 continue;
@@ -115,7 +107,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
         us->peer.data = peers;
 
         /* backup servers */
-        //初始化backup servers
+
         n = 0;
         w = 0;
 
@@ -176,7 +168,6 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
             }
         }
 
-        //将backup放在peers后面
         peers->next = backup;
 
         return NGX_OK;
@@ -184,7 +175,7 @@ ngx_http_upstream_init_round_robin(ngx_conf_t *cf,
 
 
     /* an upstream implicitly defined by proxy_pass, etc. */
-    //默认的初始化
+
     if (us->port == 0) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                       "no port in upstream \"%V\" in %s:%ui",
@@ -277,12 +268,11 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
         n = rrp->peers->next->number;
     }
 
-    //对tried的初始化
-    if (n <= 8 * sizeof(uintptr_t)) {   //服务器数量如果小于32的话，用32位的每一位表示
+    if (n <= 8 * sizeof(uintptr_t)) {
         rrp->tried = &rrp->data;
         rrp->data = 0;
 
-    } else {                            //服务器数量如果大于32的话
+    } else {
         n = (n + (8 * sizeof(uintptr_t) - 1)) / (8 * sizeof(uintptr_t));
 
         rrp->tried = ngx_pcalloc(r->pool, n * sizeof(uintptr_t));
@@ -291,7 +281,6 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
         }
     }
 
-    //挂载各个函数
     r->upstream->peer.get = ngx_http_upstream_get_round_robin_peer;
     r->upstream->peer.free = ngx_http_upstream_free_round_robin_peer;
     r->upstream->peer.tries = ngx_http_upstream_tries(rrp->peers);
@@ -305,8 +294,7 @@ ngx_http_upstream_init_round_robin_peer(ngx_http_request_t *r,
     return NGX_OK;
 }
 
-//用于创建默认的服务器信息。其中，权重默认值为1，失败次数上限默认值为1，失败时间上限为10s。
-//该函数可以认为是初始化函数的辅助函数，但其上游调用是在ngx_http_upstream.c中
+
 ngx_int_t
 ngx_http_upstream_create_round_robin_peer(ngx_http_request_t *r,
     ngx_http_upstream_resolved_t *ur)
@@ -350,12 +338,12 @@ ngx_http_upstream_create_round_robin_peer(ngx_http_request_t *r,
         peer[0].sockaddr = ur->sockaddr;
         peer[0].socklen = ur->socklen;
         peer[0].name = ur->name.data ? ur->name : ur->host;
-        peer[0].weight = 1;     //默认权重为1
+        peer[0].weight = 1;
         peer[0].effective_weight = 1;
         peer[0].current_weight = 0;
         peer[0].max_conns = 0;
-        peer[0].max_fails = 1;  //默认失败次数上限为1
-        peer[0].fail_timeout = 10;  //失败超时时间上限为10秒
+        peer[0].max_fails = 1;
+        peer[0].fail_timeout = 10;
         peers->peer = peer;
 
     } else {
@@ -413,7 +401,6 @@ ngx_http_upstream_create_round_robin_peer(ngx_http_request_t *r,
         }
     }
 
-    //挂载各个函数
     r->upstream->peer.get = ngx_http_upstream_get_round_robin_peer;
     r->upstream->peer.free = ngx_http_upstream_free_round_robin_peer;
     r->upstream->peer.tries = ngx_http_upstream_tries(rrp->peers);
@@ -445,7 +432,7 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
     peers = rrp->peers;
     ngx_http_upstream_rr_peers_wlock(peers);
 
-    if (peers->single) {        //只有一个服务器
+    if (peers->single) {
         peer = peers->peer;
 
         if (peer->down) {
@@ -461,7 +448,7 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
     } else {
 
         /* there are several peers */
-        //ngx_http_upstream_get_peer 函数返回优先级最大的服务器
+
         peer = ngx_http_upstream_get_peer(rrp);
 
         if (peer == NULL) {
@@ -473,7 +460,6 @@ ngx_http_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
                        peer, peer->current_weight);
     }
 
-    //pc中记录了选取的服务器的信息
     pc->sockaddr = peer->sockaddr;
     pc->socklen = peer->socklen;
     pc->name = &peer->name;
@@ -517,7 +503,7 @@ failed:
     return NGX_BUSY;
 }
 
-//实现选取优先级最大的服务器
+
 static ngx_http_upstream_rr_peer_t *
 ngx_http_upstream_get_peer(ngx_http_upstream_rr_peer_data_t *rrp)
 {
@@ -595,7 +581,7 @@ ngx_http_upstream_get_peer(ngx_http_upstream_rr_peer_data_t *rrp)
     return best;
 }
 
-//函数将服务器的标志字段都恢复到初始状态，以便后续使用
+
 void
 ngx_http_upstream_free_round_robin_peer(ngx_peer_connection_t *pc, void *data,
     ngx_uint_t state)

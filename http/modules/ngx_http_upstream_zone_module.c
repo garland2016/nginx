@@ -21,8 +21,8 @@ static ngx_http_upstream_rr_peers_t *ngx_http_upstream_zone_copy_peers(
 static ngx_command_t  ngx_http_upstream_zone_commands[] = {
 
     { ngx_string("zone"),
-      NGX_HTTP_UPS_CONF|NGX_CONF_TAKE12,    //NGX_HTTP_UPS_CONF 表示该指令的适用范围是upstream{}
-      ngx_http_upstream_zone,               //钩子函数
+      NGX_HTTP_UPS_CONF|NGX_CONF_TAKE12,
+      ngx_http_upstream_zone,
       0,
       0,
       NULL },
@@ -75,7 +75,6 @@ ngx_http_upstream_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
-    //共享内存的名称
     if (!value[1].len) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid zone name \"%V\"", &value[1]);
@@ -83,7 +82,7 @@ ngx_http_upstream_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     if (cf->args->nelts == 3) {
-        size = ngx_parse_size(&value[2]);       //共享内存的大小
+        size = ngx_parse_size(&value[2]);
 
         if (size == NGX_ERROR) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
@@ -91,35 +90,31 @@ ngx_http_upstream_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        //指定的共享内存的大小太小了 ngx_pagesize = 4096
         if (size < (ssize_t) (8 * ngx_pagesize)) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "zone \"%V\" is too small", &value[1]);
             return NGX_CONF_ERROR;
         }
 
-    } 
-    else {
+    } else {
         size = 0;
     }
 
-    //向全局共享内存链表中添加一个共享内存,参数是共享内存的名称和大小
     uscf->shm_zone = ngx_shared_memory_add(cf, &value[1], size,
                                            &ngx_http_upstream_module);
     if (uscf->shm_zone == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    //注册自己的共享内存初始化函数
     uscf->shm_zone->init = ngx_http_upstream_init_zone;
-    uscf->shm_zone->data = umcf;    //要存到共享内存中的内容
+    uscf->shm_zone->data = umcf;
 
     uscf->shm_zone->noreuse = 1;
 
     return NGX_CONF_OK;
 }
 
-//共享内存的初始化函数
+
 static ngx_int_t
 ngx_http_upstream_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 {
@@ -130,11 +125,8 @@ ngx_http_upstream_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     ngx_http_upstream_srv_conf_t   *uscf, **uscfp;
     ngx_http_upstream_main_conf_t  *umcf;
 
-    //将共享内存初始地址转换为ngx_slab_pool_t指针
-    //通过这个ngx_slab_pool_t指针来管理共享内存的分配与释放
     shpool = (ngx_slab_pool_t *) shm_zone->shm.addr;
-
-    umcf = shm_zone->data;      //取出全局的 upstream 配置
+    umcf = shm_zone->data;
     uscfp = umcf->upstreams.elts;
 
     if (shm_zone->shm.exists) {
@@ -156,7 +148,6 @@ ngx_http_upstream_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 
     len = sizeof(" in upstream zone \"\"") + shm_zone->shm.name.len;
 
-    //分配共享内存
     shpool->log_ctx = ngx_slab_alloc(shpool, len);
     if (shpool->log_ctx == NULL) {
         return NGX_ERROR;
@@ -164,6 +155,7 @@ ngx_http_upstream_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 
     ngx_sprintf(shpool->log_ctx, " in upstream zone \"%V\"%Z",
                 &shm_zone->shm.name);
+
 
     /* copy peers to shared memory */
 
@@ -176,7 +168,6 @@ ngx_http_upstream_init_zone(ngx_shm_zone_t *shm_zone, void *data)
             continue;
         }
 
-        //拷贝uscf 的upstream配置 数据到共享内存中去
         peers = ngx_http_upstream_zone_copy_peers(shpool, uscf);
         if (peers == NULL) {
             return NGX_ERROR;
@@ -197,7 +188,6 @@ ngx_http_upstream_zone_copy_peers(ngx_slab_pool_t *shpool,
     ngx_http_upstream_rr_peer_t   *peer, **peerp;
     ngx_http_upstream_rr_peers_t  *peers, *backup;
 
-    //为共享内存分配空间
     peers = ngx_slab_alloc(shpool, sizeof(ngx_http_upstream_rr_peers_t));
     if (peers == NULL) {
         return NULL;

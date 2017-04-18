@@ -11,9 +11,9 @@
 
 
 typedef struct {
-    ngx_array_t  *codes;        /* uintptr_t */ //保存着所属location下所有编译后的脚本
+    ngx_array_t  *codes;        /* uintptr_t */
 
-    ngx_uint_t    stack_size;   //变量值栈的大小
+    ngx_uint_t    stack_size;
 
     ngx_flag_t    log;
     ngx_flag_t    uninitialized_variable_warn;
@@ -132,8 +132,7 @@ ngx_module_t  ngx_http_rewrite_module = {
     NGX_MODULE_V1_PADDING
 };
 
-//http请求执行到 NGX_HTTP_SERVER_REWRITE_PHASE 或者 NGX_HTTP_REWRITE_PHASE 阶段的时候执行
-//准备执行脚本
+
 static ngx_int_t
 ngx_http_rewrite_handler(ngx_http_request_t *r)
 {
@@ -153,36 +152,32 @@ ngx_http_rewrite_handler(ngx_http_request_t *r)
         return NGX_DECLINED;
     }
 
-    //获取请求所属location下的配置ngx_http_rewrite_loc_conf_t 结构体
     rlcf = ngx_http_get_module_loc_conf(r, ngx_http_rewrite_module);
 
-    //检查该location下是否有待执行的脚本？ codes==NULL就是没有待执行的脚本
     if (rlcf->codes == NULL) {
         return NGX_DECLINED;
     }
 
-    //为当前请求构建脚本引擎 ngx_http_script_engine_t
     e = ngx_pcalloc(r->pool, sizeof(ngx_http_script_engine_t));
     if (e == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    //构建脚本引擎的数据栈sp
     e->sp = ngx_pcalloc(r->pool,
                         rlcf->stack_size * sizeof(ngx_http_variable_value_t));
     if (e->sp == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    e->ip = rlcf->codes->elts;      //待执行的脚本的首地址
+    e->ip = rlcf->codes->elts;
     e->request = r;
     e->quote = 1;
     e->log = rlcf->log;
     e->status = NGX_DECLINED;
 
     while (*(uintptr_t *) e->ip) {
-        code = *(ngx_http_script_code_pt *) e->ip;      //强转成 ngx_http_script_code_pt
-        code(e);    // 执行指令，每个方法负责把ip移向下一条待执行的脚本指令。
+        code = *(ngx_http_script_code_pt *) e->ip;
+        code(e);
     }
 
     if (e->status < NGX_HTTP_BAD_REQUEST) {
@@ -225,7 +220,7 @@ ngx_http_rewrite_var(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
                   "using uninitialized \"%V\" variable", &var[data].name);
 
-    *v = ngx_http_variable_null_value;  //返回一个空的变量
+    *v = ngx_http_variable_null_value;
 
     return NGX_OK;
 }
@@ -881,7 +876,6 @@ ngx_http_rewrite_variable(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     value->len--;
     value->data++;
 
-    //获得变量的索引，如果没有则将变量添加到variables中
     index = ngx_http_get_variable_index(cf, value);
 
     if (index == NGX_ERROR) {
@@ -900,7 +894,7 @@ ngx_http_rewrite_variable(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     return NGX_CONF_OK;
 }
 
-//解析set指令
+
 static char *
 ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -914,7 +908,6 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
-    //变量名必须以$开头
     if (value[1].data[0] != '$') {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid variable name \"%V\"", &value[1]);
@@ -924,13 +917,11 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value[1].len--;
     value[1].data++;
 
-    //将变量名添加到variables_keys中去，外部变量必须是NGX_HTTP_VAR_CHANGEABLE的
     v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);
     if (v == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    //将变量添加到variables中，将变量索引化处理
     index = ngx_http_get_variable_index(cf, &value[1]);
     if (index == NGX_ERROR) {
         return NGX_CONF_ERROR;
@@ -945,24 +936,22 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
            != 0
         && ngx_strncasecmp(value[1].data, (u_char *) "arg_", 4) != 0)
     {
-        v->get_handler = ngx_http_rewrite_var;          //把变量的值置空串 ngx_http_variable_null_value
-        v->data = index;    //给用户自定义的变量的index赋值
+        v->get_handler = ngx_http_rewrite_var;
+        v->data = index;
     }
 
-    //设置第2个值参数的脚本处理方法
     if (ngx_http_rewrite_value(cf, lcf, &value[2]) != NGX_CONF_OK) {
         return NGX_CONF_ERROR;
     }
 
-    //如果设置了set_handler，则说明是想要给一个内部变量赋值，内外混用的情况
     if (v->set_handler) {
         vhcode = ngx_http_script_start_code(cf->pool, &lcf->codes,
-                                   sizeof(ngx_http_script_var_handler_code_t));//设置处理该变量的方法为ngx_http_script_var_handler_code_t
+                                   sizeof(ngx_http_script_var_handler_code_t));
         if (vhcode == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        vhcode->code = ngx_http_script_var_set_handler_code;    
+        vhcode->code = ngx_http_script_var_set_handler_code;
         vhcode->handler = v->set_handler;
         vhcode->data = v->data;
 
@@ -975,13 +964,13 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    vcode->code = ngx_http_script_set_var_code; //变量名的编译执行方法
-    vcode->index = (uintptr_t) index;       //保存变量的索引
+    vcode->code = ngx_http_script_set_var_code;
+    vcode->index = (uintptr_t) index;
 
     return NGX_CONF_OK;
 }
 
-//处理第2个参数 ，可以是纯字符串，也可以包含其它变量
+
 static char *
 ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     ngx_str_t *value)
@@ -994,7 +983,6 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     n = ngx_http_script_variables_count(value);
 
     if (n == 0) {
-        //开始编译纯字符串变量值了
         val = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                          sizeof(ngx_http_script_value_code_t));
         if (val == NULL) {
@@ -1002,13 +990,12 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
         }
 
         n = ngx_atoi(value->data, value->len);
-        //printf("value = %s len = %ld n = %ld \r\n",value->data,value->len,n);   
 
         if (n == NGX_ERROR) {
             n = 0;
         }
 
-        val->code = ngx_http_script_value_code; //变量值的编译执行方法
+        val->code = ngx_http_script_value_code;
         val->value = (uintptr_t) n;
         val->text_len = (uintptr_t) value->len;
         val->text_data = (uintptr_t) value->data;
@@ -1016,7 +1003,6 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
         return NGX_CONF_OK;
     }
 
-    //参数值中有其它的变量的情况
     complex = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                  sizeof(ngx_http_script_complex_value_code_t));
     if (complex == NULL) {

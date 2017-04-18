@@ -266,7 +266,7 @@ ngx_stream_upstream_response_time_variable(ngx_stream_session_t *s,
 
     for ( ;; ) {
 
-        if (data == 1) {                // first_byte_time
+        if (data == 1) {
             if (state[i].first_byte_time == (ngx_msec_t) -1) {
                 *p++ = '-';
                 goto next;
@@ -274,11 +274,11 @@ ngx_stream_upstream_response_time_variable(ngx_stream_session_t *s,
 
             ms = state[i].first_byte_time;
 
-        } else if (data == 2 && state[i].connect_time != (ngx_msec_t) -1) {     //connect_time
+        } else if (data == 2 && state[i].connect_time != (ngx_msec_t) -1) {
             ms = state[i].connect_time;
 
         } else {
-            ms = state[i].response_time;        //response_time
+            ms = state[i].response_time;
         }
 
         ms = ngx_max(ms, 0);

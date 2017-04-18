@@ -59,12 +59,10 @@ ngx_http_static_handler(ngx_http_request_t *r)
     ngx_open_file_info_t       of;
     ngx_http_core_loc_conf_t  *clcf;
 
-    //如果请求类型为NGX_HTTP_GET|NGX_HTTP_HEAD|NGX_HTTP_POST，则继续进行处理
     if (!(r->method & (NGX_HTTP_GET|NGX_HTTP_HEAD|NGX_HTTP_POST))) {
-        return NGX_HTTP_NOT_ALLOWED;    //否则，拒绝客户端的发起的请求
+        return NGX_HTTP_NOT_ALLOWED;
     }
 
-    //检查请求的url的结尾字符是不是斜杠‘/’,如果是，则由其它handler模块处理，因为请求的不是一个文件
     if (r->uri.data[r->uri.len - 1] == '/') {
         return NGX_DECLINED;
     }
@@ -76,7 +74,6 @@ ngx_http_static_handler(ngx_http_request_t *r)
      * so we do not need to reserve memory for '/' for possible redirect
      */
 
-    //把请求的http协议的路径转化成一个文件系统的路径
     last = ngx_http_map_uri_to_path(r, &path, &root, 0);
     if (last == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;

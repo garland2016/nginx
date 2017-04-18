@@ -84,7 +84,7 @@ static ngx_command_t  ngx_http_commands[] = {
 
     { ngx_string("http"),
       NGX_MAIN_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
-      ngx_http_block,       //解析http的配置处理函数
+      ngx_http_block,
       0,
       0,
       NULL },
@@ -115,7 +115,7 @@ ngx_module_t  ngx_http_module = {
     NGX_MODULE_V1_PADDING
 };
 
-//解析整个http配置的入口函数
+
 static char *
 ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -148,7 +148,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
     /* the http main_conf context, it is the same in the all http contexts */
-    //创建main_conf
+
     ctx->main_conf = ngx_pcalloc(cf->pool,
                                  sizeof(void *) * ngx_http_max_module);
     if (ctx->main_conf == NULL) {
@@ -160,7 +160,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * the http null srv_conf context, it is used to merge
      * the server{}s' srv_conf's
      */
-    //创建srv_conf
+
     ctx->srv_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);
     if (ctx->srv_conf == NULL) {
         return NGX_CONF_ERROR;
@@ -171,7 +171,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * the http null loc_conf context, it is used to merge
      * the server{}s' loc_conf's
      */
-    //创建loc_conf
+
     ctx->loc_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);
     if (ctx->loc_conf == NULL) {
         return NGX_CONF_ERROR;
@@ -191,7 +191,6 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         module = cf->cycle->modules[m]->ctx;
         mi = cf->cycle->modules[m]->ctx_index;
 
-        //调用http模块的create_main_conf回调方法
         if (module->create_main_conf) {
             ctx->main_conf[mi] = module->create_main_conf(cf);
             if (ctx->main_conf[mi] == NULL) {
@@ -199,7 +198,6 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             }
         }
 
-        //调用http模块的create_srv_conf回调方法
         if (module->create_srv_conf) {
             ctx->srv_conf[mi] = module->create_srv_conf(cf);
             if (ctx->srv_conf[mi] == NULL) {
@@ -207,7 +205,6 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             }
         }
 
-        //调用http模块的create_loc_conf回调方法
         if (module->create_loc_conf) {
             ctx->loc_conf[mi] = module->create_loc_conf(cf);
             if (ctx->loc_conf[mi] == NULL) {
@@ -217,7 +214,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     pcf = *cf;
-    cf->ctx = ctx;  //把http创建的ctx指针 赋值给 全局的 cf->ctx保存
+    cf->ctx = ctx;
 
     for (m = 0; cf->cycle->modules[m]; m++) {
         if (cf->cycle->modules[m]->type != NGX_HTTP_MODULE) {
@@ -226,7 +223,6 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         module = cf->cycle->modules[m]->ctx;
 
-        //调用每个模块的preconfiguration函数
         if (module->preconfiguration) {
             if (module->preconfiguration(cf) != NGX_OK) {
                 return NGX_CONF_ERROR;
@@ -262,7 +258,6 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         /* init http{} main_conf's */
 
-        //调用每个模块的init_main_conf函数
         if (module->init_main_conf) {
             rv = module->init_main_conf(cf, ctx->main_conf[mi]);
             if (rv != NGX_CONF_OK) {
@@ -270,7 +265,6 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             }
         }
 
-        //从HTTP上下文(main)合并到虚拟主机上下文(server)，以及从虚拟主机上下文(server)合并到路径上下文(location)
         rv = ngx_http_merge_servers(cf, cmcf, module, mi);
         if (rv != NGX_CONF_OK) {
             goto failed;
@@ -310,7 +304,6 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         module = cf->cycle->modules[m]->ctx;
 
-        //调用每个模块的postconfiguration 函数
         if (module->postconfiguration) {
             if (module->postconfiguration(cf) != NGX_OK) {
                 return NGX_CONF_ERROR;
@@ -318,7 +311,6 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
-    //变量的初始化
     if (ngx_http_variables_init_vars(cf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -330,7 +322,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     *cf = pcf;
 
-    //根据http的11个阶段，建立执行链
+
     if (ngx_http_init_phase_handlers(cf, cmcf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -338,7 +330,6 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /* optimize the lists of ports, addresses and server names */
 
-    //对索引表一级索引中的所有port下辖的二级索引分别进行排序
     if (ngx_http_optimize_servers(cf, cmcf, cmcf->ports) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -356,7 +347,6 @@ failed:
 static ngx_int_t
 ngx_http_init_phases(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 {
-    //按下面的顺序将各个模块设置的phase handler依次加入cmcf->phase_engine.handlers列表
     if (ngx_array_init(&cmcf->phases[NGX_HTTP_POST_READ_PHASE].handlers,
                        cf->pool, 1, sizeof(ngx_http_handler_pt))
         != NGX_OK)
@@ -450,7 +440,7 @@ ngx_http_init_headers_in_hash(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     return NGX_OK;
 }
 
-//根据http的11个阶段，建立执行链
+
 static ngx_int_t
 ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 {
@@ -461,24 +451,18 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     ngx_http_phase_handler_t   *ph;
     ngx_http_phase_handler_pt   checker;
 
-
     cmcf->phase_engine.server_rewrite_index = (ngx_uint_t) -1;
     cmcf->phase_engine.location_rewrite_index = (ngx_uint_t) -1;
     find_config_index = 0;
-
-    //计算执行链的节点个数
     use_rewrite = cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers.nelts ? 1 : 0;
     use_access = cmcf->phases[NGX_HTTP_ACCESS_PHASE].handlers.nelts ? 1 : 0;
 
-    //RY_FILES阶段只有在配置了try_files指令的时候才存在
     n = use_rewrite + use_access + cmcf->try_files + 1 /* find config phase */;
 
-    //加上11个阶段的所有挂载的处理函数
     for (i = 0; i < NGX_HTTP_LOG_PHASE; i++) {
         n += cmcf->phases[i].handlers.nelts;
     }
 
-    //为执行链分配空间
     ph = ngx_pcalloc(cf->pool,
                      n * sizeof(ngx_http_phase_handler_t) + sizeof(void *));
     if (ph == NULL) {
@@ -535,7 +519,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
         case NGX_HTTP_POST_ACCESS_PHASE:
             if (use_access) {
-                ph->checker = ngx_http_core_post_access_phase;  //TRY_FILES阶段的checker函数
+                ph->checker = ngx_http_core_post_access_phase;
                 ph->next = n;
                 ph++;
             }
@@ -556,7 +540,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
             break;
 
         default:
-            checker = ngx_http_core_generic_phase;  //POST READ阶段、PREACCESS阶段的默认check函数
+            checker = ngx_http_core_generic_phase;
         }
 
         n += cmcf->phases[i].handlers.nelts;
@@ -572,7 +556,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     return NGX_OK;
 }
 
-//从HTTP上下文合并到虚拟主机上下文，以及从虚拟主机上下文合并到路径上下文
+
 static char *
 ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
     ngx_http_module_t *module, ngx_uint_t ctx_index)
@@ -594,7 +578,6 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 
         ctx->srv_conf = cscfp[s]->ctx->srv_conf;
 
-        //执行模块的 merge_srv_conf 回调方法
         if (module->merge_srv_conf) {
             rv = module->merge_srv_conf(cf, saved.srv_conf[ctx_index],
                                         cscfp[s]->ctx->srv_conf[ctx_index]);
@@ -609,7 +592,6 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 
             ctx->loc_conf = cscfp[s]->ctx->loc_conf;
 
-            //执行模块的 merge_loc_conf 回调方法
             rv = module->merge_loc_conf(cf, saved.loc_conf[ctx_index],
                                         cscfp[s]->ctx->loc_conf[ctx_index]);
             if (rv != NGX_CONF_OK) {
@@ -1427,7 +1409,6 @@ ngx_http_optimize_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
             }
         }
 
-        //将索引表转换为监听表
         if (ngx_http_init_listening(cf, &port[p]) != NGX_OK) {
             return NGX_ERROR;
         }

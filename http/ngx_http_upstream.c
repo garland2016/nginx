@@ -449,7 +449,7 @@ ngx_conf_bitmask_t  ngx_http_upstream_ignore_headers_masks[] = {
     { ngx_null_string, 0 }
 };
 
-//这此请求创建upstream
+
 ngx_int_t
 ngx_http_upstream_create(ngx_http_request_t *r)
 {
@@ -519,7 +519,7 @@ ngx_http_upstream_init(ngx_http_request_t *r)
     ngx_http_upstream_init_request(r);
 }
 
-//准备将这个请求转发给后端之前，先要与后端建立TCP连接
+
 static void
 ngx_http_upstream_init_request(ngx_http_request_t *r)
 {
@@ -622,8 +622,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
             return;
         }
 
-    } 
-    else {
+    } else {
 
         u->state = ngx_array_push(r->upstream_states);
         if (u->state == NULL) {
@@ -649,19 +648,16 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
         uscf = u->conf->upstream;
 
-    } 
-    else {
+    } else {
 
 #if (NGX_HTTP_SSL)
         u->ssl_name = u->resolved->host;
 #endif
 
-        // 需要解析地址，但socket地址还未解析
         host = &u->resolved->host;
 
         umcf = ngx_http_get_module_main_conf(r, ngx_http_upstream_module);
 
-        //先找当前访问的host是否在配置的upstream数组中
         uscfp = umcf->upstreams.elts;
 
         for (i = 0; i < umcf->upstreams.nelts; i++) {
@@ -677,7 +673,6 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
             }
         }
 
-        //如果地址已经被resolve过了，此时创建round robin peer
         if (u->resolved->sockaddr) {
 
             if (u->resolved->port == 0
@@ -698,7 +693,6 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
                 return;
             }
 
-            //向后端服务器发起连接
             ngx_http_upstream_connect(r, u);
 
             return;
@@ -714,7 +708,6 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
         temp.name = *host;
 
-        // 开始进行域名解析
         ctx = ngx_resolve_start(clcf->resolver, &temp);
         if (ctx == NULL) {
             ngx_http_upstream_finalize_request(r, u,
@@ -731,13 +724,12 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
         }
 
         ctx->name = *host;
-        ctx->handler = ngx_http_upstream_resolve_handler;   // 设置DNS解析钩子，解析DNS成功后会执行
+        ctx->handler = ngx_http_upstream_resolve_handler;
         ctx->data = r;
         ctx->timeout = clcf->resolver_timeout;
 
         u->resolved->ctx = ctx;
 
-        // 开始处理DNS解析域名
         if (ngx_resolve_name(ctx) != NGX_OK) {
             u->resolved->ctx = NULL;
             ngx_http_upstream_finalize_request(r, u,
@@ -764,7 +756,6 @@ found:
     u->ssl_name = uscf->host;
 #endif
 
-    //调用 peer.init回调函数 来初始化  调用每个upstream模块的 peer.init初始化对端
     if (uscf->peer.init(r, uscf) != NGX_OK) {
         ngx_http_upstream_finalize_request(r, u,
                                            NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -5629,7 +5620,7 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     return rv;
 }
 
-//解析server配置
+
 static char *
 ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -6232,8 +6223,7 @@ ngx_http_upstream_create_main_conf(ngx_conf_t *cf)
     return umcf;
 }
 
-//解析upstream模块的时候，就调用了各个负载均衡模块的init_upstream回调函数了，
-//如果没有指定init_upstream回调，则默认使用round_robin负载均衡算法
+
 static char *
 ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
 {
@@ -6249,10 +6239,8 @@ ngx_http_upstream_init_main_conf(ngx_conf_t *cf, void *conf)
 
     uscfp = umcf->upstreams.elts;
 
-    //调用所有upstream模块的init_upstream方法
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
-        //判断是否有设置 initupstream,默认是round robin算法.
         init = uscfp[i]->peer.init_upstream ? uscfp[i]->peer.init_upstream:
                                             ngx_http_upstream_init_round_robin;
 

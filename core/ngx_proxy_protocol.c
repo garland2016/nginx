@@ -8,7 +8,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-//PROXY TCP4 192.168.0.1 192.168.0.11 56324 443\r\n
+
 u_char *
 ngx_proxy_protocol_read(ngx_connection_t *c, u_char *buf, u_char *last)
 {

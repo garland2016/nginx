@@ -66,8 +66,8 @@ static char *ngx_stream_upstream_hash(ngx_conf_t *cf, ngx_command_t *cmd,
 static ngx_command_t  ngx_stream_upstream_hash_commands[] = {
 
     { ngx_string("hash"),
-      NGX_STREAM_UPS_CONF|NGX_CONF_TAKE12,  //NGX_HTTP_UPS_CONF 表示该指令的适用范围是upstream{}
-      ngx_stream_upstream_hash,             //钩子函数
+      NGX_STREAM_UPS_CONF|NGX_CONF_TAKE12,
+      ngx_stream_upstream_hash,
       NGX_STREAM_SRV_CONF_OFFSET,
       0,
       NULL },
@@ -652,28 +652,20 @@ ngx_stream_upstream_hash(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
                            "load balancing method redefined");
     }
 
-    //设置flags
-    uscf->flags = NGX_STREAM_UPSTREAM_CREATE        //创建标志，如果含有创建标志的话，nginx会检查重复创建，以及必要参数是否填写
-                  |NGX_STREAM_UPSTREAM_WEIGHT       //可以在server中使用weight属性
-                  |NGX_STREAM_UPSTREAM_MAX_CONNS    //可以在server中使用max_conns属性
-                  |NGX_STREAM_UPSTREAM_MAX_FAILS    //可以在server中使用max_fails属性
-                  |NGX_STREAM_UPSTREAM_FAIL_TIMEOUT //可以在server中使用fail_timeout属性
-                  |NGX_STREAM_UPSTREAM_DOWN;        //可以在server中使用down属性
+    uscf->flags = NGX_STREAM_UPSTREAM_CREATE
+                  |NGX_STREAM_UPSTREAM_WEIGHT
+                  |NGX_STREAM_UPSTREAM_MAX_CONNS
+                  |NGX_STREAM_UPSTREAM_MAX_FAILS
+                  |NGX_STREAM_UPSTREAM_FAIL_TIMEOUT
+                  |NGX_STREAM_UPSTREAM_DOWN;
 
-    //设置init_upstream回调
     if (cf->args->nelts == 2) {
         uscf->peer.init_upstream = ngx_stream_upstream_init_hash;
-        //正常情况下，当服务器集群有增加或删除的时候
-        //会有大部分的keys会重新映射到不同的服务器。
 
-    }
-    //如果指定consistent 当服务器集群有增加或删除的时候，
-    //则会用ketama算法保证只有一少部分的keys 会重新映射到不同的服务器
-    else if (ngx_strcmp(value[2].data, "consistent") == 0) {
+    } else if (ngx_strcmp(value[2].data, "consistent") == 0) {
         uscf->peer.init_upstream = ngx_stream_upstream_init_chash;
 
-    } 
-    else {
+    } else {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid parameter \"%V\"", &value[2]);
         return NGX_CONF_ERROR;

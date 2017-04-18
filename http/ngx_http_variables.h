@@ -33,12 +33,12 @@ typedef ngx_int_t (*ngx_http_get_variable_pt) (ngx_http_request_t *r,
 
 
 struct ngx_http_variable_s {
-    ngx_str_t                     name;   /* must be first to build the hash 不包含$的变量名*/
-    ngx_http_set_variable_pt      set_handler;  //如果想要在nginx.conf配置文件中使用set 来设置变量的值，实现此方法
-    ngx_http_get_variable_pt      get_handler;  //获取变量值的方法
-    uintptr_t                     data; //传给get/set_handler的参数
+    ngx_str_t                     name;   /* must be first to build the hash */
+    ngx_http_set_variable_pt      set_handler;
+    ngx_http_get_variable_pt      get_handler;
+    uintptr_t                     data;
     ngx_uint_t                    flags;
-    ngx_uint_t                    index;  //变量值在请求中的缓存数组中的索引
+    ngx_uint_t                    index;
 };
 
 

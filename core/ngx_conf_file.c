@@ -68,7 +68,7 @@ ngx_conf_param(ngx_conf_t *cf)
     ngx_conf_file_t   conf_file;
 
     param = &cf->cycle->conf_param;
-//printf("param = %s param->len = %ld \r\n",param->data,param->len);
+
     if (param->len == 0) {
         return NGX_CONF_OK;
     }
@@ -163,9 +163,9 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
     ngx_buf_t         buf;
     ngx_conf_file_t  *prev, conf_file;
     enum {
-        parse_file = 0,             //解析配置文件
-        parse_block,                //解析块配置。块配置一定是由“{”和“}”包裹起来的
-        parse_param                 //解析命令行配置。命令行配置中不支持块指令
+        parse_file = 0,
+        parse_block,
+        parse_param
     } type;
 
 #if (NGX_SUPPRESS_WARN)
@@ -213,7 +213,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         cf->conf_file->file.log = cf->log;
         cf->conf_file->line = 1;
 
-        type = parse_file;      //解析配置文件
+        type = parse_file;
 
         if (ngx_dump_config
 #if (NGX_DEBUG)
@@ -225,19 +225,18 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
                 goto failed;
             }
 
-        } 
-        else {
+        } else {
             cf->conf_file->dump = NULL;
         }
-    } 
-    else if (cf->conf_file->file.fd != NGX_INVALID_FILE) {
 
-        type = parse_block;     //解析块配置。块配置一定是由“{”和“}”包裹起来的
+    } else if (cf->conf_file->file.fd != NGX_INVALID_FILE) {
 
-    } 
-    else {
-        type = parse_param;     //解析命令行配置。命令行配置中不支持块指令
+        type = parse_block;
+
+    } else {
+        type = parse_param;
     }
+
 
     for ( ;; ) {
         rc = ngx_conf_read_token(cf);
@@ -288,8 +287,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         }
 
         /* rc == NGX_OK || rc == NGX_CONF_BLOCK_START */
-        //发现 ; 或 {
-        //自定义指令的解析
+
         if (cf->handler) {
 
             /*
@@ -316,7 +314,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
             goto failed;
         }
 
-        //nginx内建的指令解析
+
         rc = ngx_conf_handler(cf, rc);
 
         if (rc == NGX_ERROR) {
@@ -373,7 +371,6 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
             continue;
         }
 
-        //printf("cmd->name->data = %s name = %s \r\n",cmd->name.data,name->data);
         for ( /* void */ ; cmd->name.len; cmd++) {
 
             if (name->len != cmd->name.len) {
@@ -389,8 +386,6 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
             if (cf->cycle->modules[i]->type != NGX_CONF_MODULE
                 && cf->cycle->modules[i]->type != cf->module_type)
             {
-                //printf("cmd->name = %s\r\nname = %s\r\nmodules[i]->type = %ld\r\ncf->module_type = %ld\r\n\r\n",
-                //        cmd->name.data,name->data,cf->cycle->modules[i]->type,cf->module_type);
                 continue;
             }
 
@@ -400,7 +395,6 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 continue;
             }
 
-            //非块指令必须以“;”结尾
             if (!(cmd->type & NGX_CONF_BLOCK) && last != NGX_OK) {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                   "directive \"%s\" is not terminated by \";\"",
@@ -408,7 +402,6 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 return NGX_ERROR;
             }
 
-            //块指令必须后接“{”
             if ((cmd->type & NGX_CONF_BLOCK) && last != NGX_CONF_BLOCK_START) {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "directive \"%s\" has no opening \"{\"",
@@ -417,28 +410,28 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
             }
 
             /* is the directive's argument count right ? */
-            //指令参数个数是否正确
+
             if (!(cmd->type & NGX_CONF_ANY)) {
 
-                if (cmd->type & NGX_CONF_FLAG) {    //如果是flag类型的指令，参数个数不为2则错误
+                if (cmd->type & NGX_CONF_FLAG) {
 
                     if (cf->args->nelts != 2) {
                         goto invalid;
                     }
 
-                } else if (cmd->type & NGX_CONF_1MORE) {    //如果指定参数大于1，参数个数小于2则错误
+                } else if (cmd->type & NGX_CONF_1MORE) {
 
                     if (cf->args->nelts < 2) {
                         goto invalid;
                     }
 
-                } else if (cmd->type & NGX_CONF_2MORE) {    //如果指定参数大于2，参数个数小于3则错误
+                } else if (cmd->type & NGX_CONF_2MORE) {
 
                     if (cf->args->nelts < 3) {
                         goto invalid;
                     }
 
-                } else if (cf->args->nelts > NGX_CONF_MAX_ARGS) {   //如果参数超过了最大参数个数，则错误
+                } else if (cf->args->nelts > NGX_CONF_MAX_ARGS) {
 
                     goto invalid;
 
@@ -452,19 +445,13 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
             conf = NULL;
 
-            if (cmd->type & NGX_DIRECT_CONF) {  //NGX_DIRECT_CONF常量单纯用来指定配置存储区的寻址方法，只用于core模块
+            if (cmd->type & NGX_DIRECT_CONF) {
                 conf = ((void **) cf->ctx)[cf->cycle->modules[i]->index];
 
-            } 
-            else if (cmd->type & NGX_MAIN_CONF) {
+            } else if (cmd->type & NGX_MAIN_CONF) {
                 conf = &(((void **) cf->ctx)[cf->cycle->modules[i]->index]);
 
-            } 
-            else if (cf->ctx) {
-                //用cf->ctx + cmd->conf指定的偏移量，取出对应的配置，cmd->conf可能是：
-                //NGX_HTTP_MAIN_CONF_OFFSET、
-                //NGX_HTTP_SRV_CONF_OFFSET、
-                //NGX_HTTP_LOC_CONF_OFFSET 分别对应 main server location 的配置
+            } else if (cf->ctx) {
                 confp = *(void **) ((char *) cf->ctx + cmd->conf);
 
                 if (confp) {
@@ -472,7 +459,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 }
             }
 
-            rv = cmd->set(cf, cmd, conf);       //开始解析内建指令参数 conf是上一步得到的配置存贮区地址
+            rv = cmd->set(cf, cmd, conf);
 
             if (rv == NGX_CONF_OK) {
                 return NGX_OK;
@@ -1332,20 +1319,19 @@ ngx_conf_set_bufs_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t   *value;
     ngx_bufs_t  *bufs;
 
+
     bufs = (ngx_bufs_t *) (p + cmd->offset);
     if (bufs->num) {
         return "is duplicate";
     }
 
-    value = cf->args->elts;     //command 1 32K
+    value = cf->args->elts;
 
-    //缓冲区的数量
     bufs->num = ngx_atoi(value[1].data, value[1].len);
     if (bufs->num == NGX_ERROR || bufs->num == 0) {
         return "invalid value";
     }
 
-    //缓冲区的大小
     bufs->size = ngx_parse_size(&value[2]);
     if (bufs->size == (size_t) NGX_ERROR || bufs->size == 0) {
         return "invalid value";

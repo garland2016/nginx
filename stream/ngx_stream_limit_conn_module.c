@@ -390,7 +390,6 @@ ngx_stream_limit_conn_init_zone(ngx_shm_zone_t *shm_zone, void *data)
         return NGX_OK;
     }
 
-    //共享内存的首地址转成  ngx_slab_pool_t 指针，用来分配和释放内存
     shpool = (ngx_slab_pool_t *) shm_zone->shm.addr;
 
     if (shm_zone->shm.exists) {
@@ -404,7 +403,6 @@ ngx_stream_limit_conn_init_zone(ngx_shm_zone_t *shm_zone, void *data)
         return NGX_ERROR;
     }
 
-    //把刚分配好的内存地址 指向 ngx_slab_pool_t的data成员
     shpool->data = ctx->rbtree;
 
     sentinel = ngx_slab_alloc(shpool, sizeof(ngx_rbtree_node_t));

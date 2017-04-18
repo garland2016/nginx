@@ -75,8 +75,8 @@ static ngx_command_t  ngx_thread_pool_commands[] = {
 
 static ngx_core_module_t  ngx_thread_pool_module_ctx = {
     ngx_string("thread_pool"),
-    ngx_thread_pool_create_conf,        //create_conf方法
-    ngx_thread_pool_init_conf           //init_conf方法
+    ngx_thread_pool_create_conf,
+    ngx_thread_pool_init_conf
 };
 
 

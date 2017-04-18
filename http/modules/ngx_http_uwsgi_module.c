@@ -670,7 +670,6 @@ ngx_http_uwsgi_handler(ngx_http_request_t *r)
     u->create_key = ngx_http_uwsgi_create_key;
 #endif
 
-    //5、设置upstream回调函数
     u->create_request = ngx_http_uwsgi_create_request;
     u->reinit_request = ngx_http_uwsgi_reinit_request;
     u->process_header = ngx_http_uwsgi_process_status_line;
@@ -680,13 +679,11 @@ ngx_http_uwsgi_handler(ngx_http_request_t *r)
 
     u->buffering = uwcf->upstream.buffering;
 
-    //创建upstream的 pipe 
     u->pipe = ngx_pcalloc(r->pool, sizeof(ngx_event_pipe_t));
     if (u->pipe == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    //指定pipe的input_filter
     u->pipe->input_filter = ngx_event_pipe_copy_input_filter;
     u->pipe->input_ctx = r;
 
@@ -697,7 +694,6 @@ ngx_http_uwsgi_handler(ngx_http_request_t *r)
         r->request_body_no_buffering = 1;
     }
 
-    //6、完成upstream初始化并进行收尾工作
     rc = ngx_http_read_client_request_body(r, ngx_http_upstream_init);
 
     if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
@@ -2071,14 +2067,11 @@ ngx_http_uwsgi_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "is duplicate";
     }
 
-    //upstram的定势，被注册到了请求包处理11个阶段的content phase阶段
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
-
     clcf->handler = ngx_http_uwsgi_handler;
 
     value = cf->args->elts;
 
-    //拿到配置的url，也就是Uwsgi Server的地址+端口
     url = &value[1];
 
     n = ngx_http_script_variables_count(url);

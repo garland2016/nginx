@@ -376,8 +376,8 @@ ngx_event_recvmsg(ngx_event_t *ev)
 
         msg.msg_name = &sa;
         msg.msg_namelen = sizeof(ngx_sockaddr_t);
-        msg.msg_iov = iov;      //指向 strcut iovec 结构体的数组      
-        msg.msg_iovlen = 1;     //数组的长度
+        msg.msg_iov = iov;
+        msg.msg_iovlen = 1;
 
 #if (NGX_HAVE_MSGHDR_MSG_CONTROL)
 
@@ -385,22 +385,22 @@ ngx_event_recvmsg(ngx_event_t *ev)
 
 #if (NGX_HAVE_IP_RECVDSTADDR || NGX_HAVE_IP_PKTINFO)
             if (ls->sockaddr->sa_family == AF_INET) {
-                msg.msg_control = &msg_control;             //要发送的控制信息
-                msg.msg_controllen = sizeof(msg_control);   //要发送的控制信息的长度
+                msg.msg_control = &msg_control;
+                msg.msg_controllen = sizeof(msg_control);
             }
 #endif
 
 #if (NGX_HAVE_INET6 && NGX_HAVE_IPV6_RECVPKTINFO)
             if (ls->sockaddr->sa_family == AF_INET6) {
-                msg.msg_control = &msg_control6;            //要发送的控制信息
-                msg.msg_controllen = sizeof(msg_control6);  //要发送的控制信息的长度
+                msg.msg_control = &msg_control6;
+                msg.msg_controllen = sizeof(msg_control6);
             }
 #endif
         }
 
 #endif
 
-        n = recvmsg(lc->fd, &msg, 0);   //接收数据
+        n = recvmsg(lc->fd, &msg, 0);
 
         if (n == -1) {
             err = ngx_socket_errno;
@@ -446,7 +446,7 @@ ngx_event_recvmsg(ngx_event_t *ev)
 
         c->pool = ngx_create_pool(ls->pool_size, ev->log);
         if (c->pool == NULL) {
-            ngx_close_accepted_connection(c);               //关掉已经accpet的连接
+            ngx_close_accepted_connection(c);
             return;
         }
 

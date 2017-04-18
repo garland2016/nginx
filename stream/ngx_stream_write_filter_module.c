@@ -65,7 +65,6 @@ ngx_stream_write_filter(ngx_stream_session_t *s, ngx_chain_t *in,
         ctx = ngx_pcalloc(s->connection->pool,
                           sizeof(ngx_stream_write_filter_ctx_t));
         if (ctx == NULL) {
-            printf("A\r\n");
             return NGX_ERROR;
         }
 
@@ -82,7 +81,6 @@ ngx_stream_write_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     }
 
     if (c->error) {
-        printf("B\r\n");
         return NGX_ERROR;
     }
 
@@ -122,7 +120,6 @@ ngx_stream_write_filter(ngx_stream_session_t *s, ngx_chain_t *in,
                           cl->buf->file_last);
 
             ngx_debug_point();
-            printf("C\r\n");
             return NGX_ERROR;
         }
 #endif
@@ -147,7 +144,6 @@ ngx_stream_write_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     for (ln = in; ln; ln = ln->next) {
         cl = ngx_alloc_chain_link(c->pool);
         if (cl == NULL) {
-            printf("D\r\n");
             return NGX_ERROR;
         }
 
@@ -180,7 +176,6 @@ ngx_stream_write_filter(ngx_stream_session_t *s, ngx_chain_t *in,
                           cl->buf->file_last);
 
             ngx_debug_point();
-            printf("E\r\n");
             return NGX_ERROR;
         }
 #endif
@@ -227,7 +222,6 @@ ngx_stream_write_filter(ngx_stream_session_t *s, ngx_chain_t *in,
 
         ngx_debug_point();
 
-        printf("F\r\n");
         return NGX_ERROR;
     }
 
@@ -238,7 +232,6 @@ ngx_stream_write_filter(ngx_stream_session_t *s, ngx_chain_t *in,
 
     if (chain == NGX_CHAIN_ERROR) {
         c->error = 1;
-        printf("G\r\n");
         return NGX_ERROR;
     }
 
@@ -254,7 +247,6 @@ ngx_stream_write_filter(ngx_stream_session_t *s, ngx_chain_t *in,
         if (c->shared) {
             ngx_log_error(NGX_LOG_ALERT, c->log, 0,
                           "shared connection is busy");
-                          printf("H\r\n");
             return NGX_ERROR;
         }
 

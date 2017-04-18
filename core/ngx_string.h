@@ -26,14 +26,14 @@ typedef struct {
 
 
 typedef struct {
-    unsigned    len:28;         //变量值的连续内存的长度
+    unsigned    len:28;
 
-    unsigned    valid:1;        //如果为1，表示该变量值已经解析过，数据可用
+    unsigned    valid:1;
     unsigned    no_cacheable:1;
-    unsigned    not_found:1;    //如果为1，表示该变量值已经解析过，但没解析到变量的值
+    unsigned    not_found:1;
     unsigned    escape:1;
 
-    u_char     *data;           //变量值的内存的起始地址
+    u_char     *data;
 } ngx_variable_value_t;
 
 

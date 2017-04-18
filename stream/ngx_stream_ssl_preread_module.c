@@ -361,7 +361,7 @@ ngx_stream_ssl_preread_parse_record(ngx_stream_ssl_preread_ctx_t *ctx,
 
 
 static ngx_int_t
-ngx_stream_ssl_preread_server_name_variable(ngx_stream_session_t *s,            //获取变量的回调函数
+ngx_stream_ssl_preread_server_name_variable(ngx_stream_session_t *s,
     ngx_variable_value_t *v, uintptr_t data)
 {
     ngx_stream_ssl_preread_ctx_t  *ctx;

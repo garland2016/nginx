@@ -30,27 +30,23 @@ struct ngx_shm_zone_s {
     void                     *data;
     ngx_shm_t                 shm;
     ngx_shm_zone_init_pt      init;
-    void                     *tag;      //定义自己仅能够被某个模块使用
+    void                     *tag;
     ngx_uint_t                noreuse;  /* unsigned  noreuse:1; */
 };
 
 
 struct ngx_cycle_s {
     void                  ****conf_ctx;
-    /* 配置上下文数组(含所有模块)
-    首先指向一个成员皆为指针的数组，其中每个成员指针又指向另外一个成员皆为指针的数
-    组，第2个子数组中的成员指针才会指向各模块生成的配置结构体！
-    */
-    ngx_pool_t               *pool;             //内存池
+    ngx_pool_t               *pool;
 
-    ngx_log_t                *log;              //日志
-    ngx_log_t                 new_log;          //中转的日志，在ngx_init_cycle的时候产生一个日志初始化，再 log = &new_log  
+    ngx_log_t                *log;
+    ngx_log_t                 new_log;
 
     ngx_uint_t                log_use_stderr;  /* unsigned  log_use_stderr:1; */
 
-    ngx_connection_t        **files;                //连接文件
-    ngx_connection_t         *free_connections;     //空闲连接,这是一个开始地址
-    ngx_uint_t                free_connection_n;    // 空闲连接数量
+    ngx_connection_t        **files;
+    ngx_connection_t         *free_connections;
+    ngx_uint_t                free_connection_n;
 
     ngx_module_t            **modules;
     ngx_uint_t                modules_n;
@@ -58,31 +54,31 @@ struct ngx_cycle_s {
 
     ngx_queue_t               reusable_connections_queue;
 
-    ngx_array_t               listening;            // 监听数组 
+    ngx_array_t               listening;
     ngx_array_t               paths;
 
     ngx_array_t               config_dump;
     ngx_rbtree_t              config_dump_rbtree;
     ngx_rbtree_node_t         config_dump_sentinel;
 
-    ngx_list_t                open_files;               //打开文件的链表
-    ngx_list_t                shared_memory;            //共享内存链表
+    ngx_list_t                open_files;
+    ngx_list_t                shared_memory;
 
-    ngx_uint_t                connection_n;             //连接数目
-    ngx_uint_t                files_n;                  //打开的文件个数
+    ngx_uint_t                connection_n;
+    ngx_uint_t                files_n;
 
-    ngx_connection_t         *connections;              //连接
-    ngx_event_t              *read_events;              //读事件
-    ngx_event_t              *write_events;             //写事件
+    ngx_connection_t         *connections;
+    ngx_event_t              *read_events;
+    ngx_event_t              *write_events;
 
     ngx_cycle_t              *old_cycle;
 
-    ngx_str_t                 conf_file;                //配置文件名，如:nginx.conf
-    ngx_str_t                 conf_param;               //配置参数
-    ngx_str_t                 conf_prefix;              //配置前缀
-    ngx_str_t                 prefix;                   //前缀
-    ngx_str_t                 lock_file;                //锁文件的路径
-    ngx_str_t                 hostname;             //主机名
+    ngx_str_t                 conf_file;
+    ngx_str_t                 conf_param;
+    ngx_str_t                 conf_prefix;
+    ngx_str_t                 prefix;
+    ngx_str_t                 lock_file;
+    ngx_str_t                 hostname;
 };
 
 

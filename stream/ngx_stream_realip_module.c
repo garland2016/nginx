@@ -65,7 +65,7 @@ static ngx_stream_module_t  ngx_stream_realip_module_ctx = {
 };
 
 
-ngx_module_t   = {
+ngx_module_t  ngx_stream_realip_module = {
     NGX_MODULE_V1,
     &ngx_stream_realip_module_ctx,         /* module context */
     ngx_stream_realip_commands,            /* module directives */
@@ -206,7 +206,6 @@ ngx_stream_realip_from(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 #endif
 
-    //新增一条记录
     rc = ngx_ptocidr(&value[1], cidr);
 
     if (rc == NGX_ERROR) {

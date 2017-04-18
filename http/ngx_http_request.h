@@ -333,8 +333,8 @@ typedef ngx_int_t (*ngx_http_post_subrequest_pt)(ngx_http_request_t *r,
     void *data, ngx_int_t rc);
 
 typedef struct {
-    ngx_http_post_subrequest_pt       handler;      //子请求的回调
-    void                             *data;         //传递给handler的额外参数
+    ngx_http_post_subrequest_pt       handler;
+    void                             *data;
 } ngx_http_post_subrequest_t;
 
 
@@ -407,15 +407,15 @@ struct ngx_http_request_s {
     ngx_chain_t                      *out;
     ngx_http_request_t               *main;
     ngx_http_request_t               *parent;
-    ngx_http_postponed_request_t     *postponed;        //保存了该请求的一个子请求的链表
+    ngx_http_postponed_request_t     *postponed;
     ngx_http_post_subrequest_t       *post_subrequest;
-    ngx_http_posted_request_t        *posted_requests;  //当前需要遍历的请求（节点）
+    ngx_http_posted_request_t        *posted_requests;
 
     ngx_int_t                         phase_handler;
     ngx_http_handler_pt               content_handler;
     ngx_uint_t                        access_code;
 
-    ngx_http_variable_value_t        *variables;    //存储为这个请求缓存了的所有变量的值，数组下标为索引号
+    ngx_http_variable_value_t        *variables;
 
 #if (NGX_PCRE)
     ngx_uint_t                        ncaptures;

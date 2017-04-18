@@ -825,7 +825,7 @@ ngx_http_handler(ngx_http_request_t *r)
 #endif
 
     r->write_event_handler = ngx_http_core_run_phases;
-    ngx_http_core_run_phases(r);        //重新走一遍HTTP的各个阶段
+    ngx_http_core_run_phases(r);
 }
 
 
@@ -850,7 +850,7 @@ ngx_http_core_run_phases(ngx_http_request_t *r)
     }
 }
 
-//POST READ阶段、PREACCESS阶段的默认check函数
+
 ngx_int_t
 ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 {
@@ -864,32 +864,30 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "generic phase: %ui", r->phase_handler);
 
-    rc = ph->handler(r);        //执行当前节点的handler函数
+    rc = ph->handler(r);
 
-    if (rc == NGX_OK) {         //表示该阶段已经处理完成，需要转入下一个阶段
+    if (rc == NGX_OK) {
         r->phase_handler = ph->next;
         return NGX_AGAIN;
     }
 
-    if (rc == NGX_DECLINED) {   //表示需要转入本阶段的下一个handler继续处理
+    if (rc == NGX_DECLINED) {
         r->phase_handler++;
         return NGX_AGAIN;
     }
 
-    //表示需要等待某个事件发生才能继续处理（比如等待网络IO），
-    //此时Nginx为了不阻塞其他请求的处理，必须中断当前请求的执行链，等待事件发生之后继续执行该handler
     if (rc == NGX_AGAIN || rc == NGX_DONE) {
         return NGX_OK;
     }
 
     /* rc == NGX_ERROR || rc == NGX_HTTP_...  */
-    //表示发生了错误，需要结束该请求
+
     ngx_http_finalize_request(r, rc);
 
     return NGX_OK;
 }
 
-//SERVER_REWRITE阶段的checker函数
+
 ngx_int_t
 ngx_http_core_rewrite_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 {
@@ -900,19 +898,17 @@ ngx_http_core_rewrite_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 
     rc = ph->handler(r);
 
-    if (rc == NGX_DECLINED) {       //表示需要转入本阶段的下一个handler继续处理
+    if (rc == NGX_DECLINED) {
         r->phase_handler++;
         return NGX_AGAIN;
     }
 
-    //表示需要等待某个事件发生才能继续处理（比如等待网络IO），
-    //此时Nginx为了不阻塞其他请求的处理，必须中断当前请求的执行链，等待事件发生之后继续执行该handler
     if (rc == NGX_DONE) {
         return NGX_OK;
     }
 
     /* NGX_OK, NGX_AGAIN, NGX_ERROR, NGX_HTTP_...  */
-    //表示发生了错误，需要结束该请求
+
     ngx_http_finalize_request(r, rc);
 
     return NGX_OK;
@@ -1120,8 +1116,7 @@ ngx_http_core_access_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     return NGX_OK;
 }
 
-//检查指定的文件或目录是否存在，如果本地文件系统存在某个文件或目录则退出该阶段继续执行下面的阶段，
-//否则内部重定向到最后一个参数指定的location或返回指定的返回码
+
 ngx_int_t
 ngx_http_core_post_access_phase(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph)
@@ -1359,7 +1354,7 @@ ngx_http_core_try_files_phase(ngx_http_request_t *r,
     /* not reached */
 }
 
-//CONTENT阶段的checker函数
+
 ngx_int_t
 ngx_http_core_content_phase(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph)
@@ -1368,7 +1363,6 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
     ngx_int_t  rc;
     ngx_str_t  path;
 
-    //当有content handler时，CONTENT阶段只会执行content handler，不再执行本阶段的handler链。
     if (r->content_handler) {
         r->write_event_handler = ngx_http_request_empty_handler;
         ngx_http_finalize_request(r, r->content_handler(r));
@@ -1403,13 +1397,13 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
                           "directory index of \"%s\" is forbidden", path.data);
         }
 
-        ngx_http_finalize_request(r, NGX_HTTP_FORBIDDEN);//给客户端返回NGX_HTTP_FORBIDDEN (403)
+        ngx_http_finalize_request(r, NGX_HTTP_FORBIDDEN);
         return NGX_OK;
     }
 
     ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "no handler found");
 
-    ngx_http_finalize_request(r, NGX_HTTP_NOT_FOUND);   //给客户端返回NGX_HTTP_NOT_FOUND (404)
+    ngx_http_finalize_request(r, NGX_HTTP_NOT_FOUND);
     return NGX_OK;
 }
 
@@ -1937,7 +1931,7 @@ ngx_http_send_response(ngx_http_request_t *r, ngx_uint_t status,
     return ngx_http_output_filter(r, &out);
 }
 
-//发送HTTP响应头
+
 ngx_int_t
 ngx_http_send_header(ngx_http_request_t *r)
 {
@@ -1956,10 +1950,10 @@ ngx_http_send_header(ngx_http_request_t *r)
         r->headers_out.status_line.len = 0;
     }
 
-    return ngx_http_top_header_filter(r);       //header filter的头节点
+    return ngx_http_top_header_filter(r);
 }
 
-//发送响应体
+
 ngx_int_t
 ngx_http_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
@@ -2420,7 +2414,7 @@ ngx_http_gzip_quantity(u_char *p, u_char *last)
 
 #endif
 
-//创建subrequest的函数,r为当前请求，uri和args为新的要发起的uri和args
+
 ngx_int_t
 ngx_http_subrequest(ngx_http_request_t *r,
     ngx_str_t *uri, ngx_str_t *args, ngx_http_request_t **psr,
@@ -2448,7 +2442,6 @@ ngx_http_subrequest(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    //创建一个子请求
     sr = ngx_pcalloc(r->pool, sizeof(ngx_http_request_t));
     if (sr == NULL) {
         return NGX_ERROR;
@@ -2457,9 +2450,8 @@ ngx_http_subrequest(ngx_http_request_t *r,
     sr->signature = NGX_HTTP_MODULE;
 
     c = r->connection;
-    sr->connection = c;     //保存连接的指针
+    sr->connection = c;
 
-    //创建ctx
     sr->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);
     if (sr->ctx == NULL) {
         return NGX_ERROR;
@@ -2472,7 +2464,6 @@ ngx_http_subrequest(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    //给子请求的各个成员赋值
     cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
     sr->main_conf = cscf->ctx->main_conf;
     sr->srv_conf = cscf->ctx->srv_conf;
@@ -2505,8 +2496,6 @@ ngx_http_subrequest(ngx_http_request_t *r,
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http subrequest \"%V?%V\"", uri, &sr->args);
 
-    //NGX_HTTP_SUBREQUEST_WAITED:表示如果该子请求提前完成(按后序遍历的顺序)，是否设置将它的状态设为done，
-    //当设置该参数时，提前完成就会设置done，不设时，会让该子请求等待它之前的子请求处理完毕才会将状态设置为done
     sr->subrequest_in_memory = (flags & NGX_HTTP_SUBREQUEST_IN_MEMORY) != 0;
     sr->waited = (flags & NGX_HTTP_SUBREQUEST_WAITED) != 0;
 
@@ -2516,27 +2505,20 @@ ngx_http_subrequest(ngx_http_request_t *r,
 
     ngx_http_set_exten(sr);
 
-    //主请求保存在main字段中
     sr->main = r->main;
-    sr->parent = r;     //父请求为当前请求
-    sr->post_subrequest = ps;       //保存回调handler及数据，在子请求执行完，将会调用
+    sr->parent = r;
+    sr->post_subrequest = ps;
+    sr->read_event_handler = ngx_http_request_empty_handler;
+    sr->write_event_handler = ngx_http_handler;
 
-    //读事件handler赋值为不做任何事的函数，因为子请求不用再读数据或者检查连接状态；
-    //写事件handler为ngx_http_handler，它会重走phase
-    sr->read_event_handler = ngx_http_request_empty_handler;        
-    sr->write_event_handler = ngx_http_handler;     
-
-    //ngx_connection_s的data字段比较关键，它保存了当前可以向out chain输出数据的请求
     if (c->data == r && r->postponed == NULL) {
         c->data = sr;
     }
 
-    //默认共享父请求的变量，当然你也可以根据需求在创建完子请求后，再创建子请求独立的变量集
     sr->variables = r->variables;
 
     sr->log_handler = r->log_handler;
 
-    //创建ngx_http_postponed_request_t结构体
     pr = ngx_palloc(r->pool, sizeof(ngx_http_postponed_request_t));
     if (pr == NULL) {
         return NGX_ERROR;
@@ -2546,19 +2528,16 @@ ngx_http_subrequest(ngx_http_request_t *r,
     pr->out = NULL;
     pr->next = NULL;
 
-    //把该子请求挂载在其父请求的postponed链表的队尾
     if (r->postponed) {
-        for (p = r->postponed; p->next; p = p->next) { /* void */ } //得到该请求的子请求的链表的末尾
+        for (p = r->postponed; p->next; p = p->next) { /* void */ }
         p->next = pr;
 
     } else {
         r->postponed = pr;
     }
 
-    //子请求为内部请求，它可以访问internal类型的location
     sr->internal = 1;
 
-    //继承父请求的一些状态
     sr->discard_body = r->discard_body;
     sr->expect_tested = 1;
     sr->main_filter_need_in_memory = r->main_filter_need_in_memory;
@@ -2570,13 +2549,10 @@ ngx_http_subrequest(ngx_http_request_t *r,
     sr->start_sec = tp->sec;
     sr->start_msec = tp->msec;
 
-    //增加主请求的引用数，这个字段主要是在ngx_http_finalize_request调用的一些结束请求和
-    //连接的函数中使用
     r->main->count++;
 
     *psr = sr;
 
-    //将该子请求挂载在主请求的posted_requests
     return ngx_http_post_request(sr, NULL);
 }
 
@@ -2889,7 +2865,7 @@ ngx_http_get_forwarded_addr_internal(ngx_http_request_t *r, ngx_addr_t *addr,
     return NGX_OK;
 }
 
-//解析server配置项
+
 static char *
 ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -2910,17 +2886,17 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     http_ctx = cf->ctx;
-    ctx->main_conf = http_ctx->main_conf;   //将http->main_conf 指针赋值给新建的ctx->main_conf指针
+    ctx->main_conf = http_ctx->main_conf;
 
     /* the server{}'s srv_conf */
-    //创建 srv_conf
+
     ctx->srv_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);
     if (ctx->srv_conf == NULL) {
         return NGX_CONF_ERROR;
     }
 
     /* the server{}'s loc_conf */
-    //创建 loc_conf
+
     ctx->loc_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);
     if (ctx->loc_conf == NULL) {
         return NGX_CONF_ERROR;

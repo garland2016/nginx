@@ -364,6 +364,7 @@ ngx_inet6_ntop(u_char *p, u_char *text, size_t len)
 
 #endif
 
+
 ngx_int_t
 ngx_ptocidr(ngx_str_t *text, ngx_cidr_t *cidr)
 {

@@ -151,10 +151,9 @@ typedef struct {
 
     ngx_hash_t                 headers_in_hash;
 
-    ngx_hash_t                 variables_hash;  //存储变量名的散列表
+    ngx_hash_t                 variables_hash;
 
     ngx_array_t                variables;       /* ngx_http_variable_t */
-                                                //真正保存nginx使用到的变量的数组，保存索引过的变量数组
     ngx_uint_t                 ncaptures;
 
     ngx_uint_t                 server_names_hash_max_size;
@@ -163,8 +162,7 @@ typedef struct {
     ngx_uint_t                 variables_hash_max_size;
     ngx_uint_t                 variables_hash_bucket_size;
 
-    ngx_hash_keys_arrays_t    *variables_keys;      //保存所有的自定义变量
-                                                    //用于构造variables_hash散列表
+    ngx_hash_keys_arrays_t    *variables_keys;
 
     ngx_array_t               *ports;
 
@@ -455,16 +453,16 @@ typedef struct {
 
 
 struct ngx_http_location_tree_node_s {
-    ngx_http_location_tree_node_t   *left;  //左子树，当然是长度短或者字母序小的不同前缀的路径
-    ngx_http_location_tree_node_t   *right; //右子树，当然是长度长或者字母序大的不同前缀的路径
+    ngx_http_location_tree_node_t   *left;
+    ngx_http_location_tree_node_t   *right;
     ngx_http_location_tree_node_t   *tree;
 
-    ngx_http_core_loc_conf_t        *exact;     //两类前缀匹配路径的inclusive指针域指向这两类路径的配置上下文
-    ngx_http_core_loc_conf_t        *inclusive; //精确匹配路径的exact指针域指向这些路径的配置上下文
+    ngx_http_core_loc_conf_t        *exact;
+    ngx_http_core_loc_conf_t        *inclusive;
 
     u_char                           auto_redirect;
-    u_char                           len;       //路径前缀的长度
-    u_char                           name[1];   //路径前缀
+    u_char                           len;
+    u_char                           name[1];
 };
 
 
@@ -501,11 +499,10 @@ ngx_int_t ngx_http_auth_basic_user(ngx_http_request_t *r);
 ngx_int_t ngx_http_gzip_ok(ngx_http_request_t *r);
 #endif
 
-//创建subrequest的函数
+
 ngx_int_t ngx_http_subrequest(ngx_http_request_t *r,
     ngx_str_t *uri, ngx_str_t *args, ngx_http_request_t **sr,
     ngx_http_post_subrequest_t *psr, ngx_uint_t flags);
-
 ngx_int_t ngx_http_internal_redirect(ngx_http_request_t *r,
     ngx_str_t *uri, ngx_str_t *args);
 ngx_int_t ngx_http_named_location(ngx_http_request_t *r, ngx_str_t *name);

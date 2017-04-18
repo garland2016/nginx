@@ -47,7 +47,7 @@ ngx_os_init(ngx_log_t *log)
         return NGX_ERROR;
     }
 
-    ngx_pagesize = getpagesize();               //页面大小，默认4096
+    ngx_pagesize = getpagesize();
     ngx_cacheline_size = NGX_CPU_CACHE_LINE;
 
     for (n = ngx_pagesize; n >>= 1; ngx_pagesize_shift++) { /* void */ }

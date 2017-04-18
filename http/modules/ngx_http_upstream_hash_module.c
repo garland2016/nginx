@@ -66,8 +66,8 @@ static char *ngx_http_upstream_hash(ngx_conf_t *cf, ngx_command_t *cmd,
 static ngx_command_t  ngx_http_upstream_hash_commands[] = {
 
     { ngx_string("hash"),
-      NGX_HTTP_UPS_CONF|NGX_CONF_TAKE12,    //NGX_HTTP_UPS_CONF 表示该指令的适用范围是upstream{}
-      ngx_http_upstream_hash,               //钩子函数
+      NGX_HTTP_UPS_CONF|NGX_CONF_TAKE12,
+      ngx_http_upstream_hash,
       NGX_HTTP_SRV_CONF_OFFSET,
       0,
       NULL },
@@ -653,15 +653,13 @@ ngx_http_upstream_hash(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
                            "load balancing method redefined");
     }
 
-    //设置uscf->flags
-    uscf->flags = NGX_HTTP_UPSTREAM_CREATE          //创建标志，如果含有创建标志的话，nginx会检查重复创建，以及必要参数是否填写
-                  |NGX_HTTP_UPSTREAM_WEIGHT         //可以在server中使用weight属性
-                  |NGX_HTTP_UPSTREAM_MAX_CONNS      //可以在server中使用max_conns属性
-                  |NGX_HTTP_UPSTREAM_MAX_FAILS      //可以在server中使用max_fails属性
-                  |NGX_HTTP_UPSTREAM_FAIL_TIMEOUT   //可以在server中使用fail_timeout属性
-                  |NGX_HTTP_UPSTREAM_DOWN;          //可以在server中使用down属性
+    uscf->flags = NGX_HTTP_UPSTREAM_CREATE
+                  |NGX_HTTP_UPSTREAM_WEIGHT
+                  |NGX_HTTP_UPSTREAM_MAX_CONNS
+                  |NGX_HTTP_UPSTREAM_MAX_FAILS
+                  |NGX_HTTP_UPSTREAM_FAIL_TIMEOUT
+                  |NGX_HTTP_UPSTREAM_DOWN;
 
-     //设置init_upstream回调
     if (cf->args->nelts == 2) {
         uscf->peer.init_upstream = ngx_http_upstream_init_hash;
 

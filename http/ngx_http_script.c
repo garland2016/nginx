@@ -112,7 +112,7 @@ ngx_http_compile_complex_value(ngx_http_compile_complex_value_t *ccv)
     ngx_array_t                 flushes, lengths, values, *pf, *pl, *pv;
     ngx_http_script_compile_t   sc;
 
-    v = ccv->value;         //$binary_remote_addr
+    v = ccv->value;
 
     nv = 0;
     nc = 0;
@@ -122,8 +122,7 @@ ngx_http_compile_complex_value(ngx_http_compile_complex_value_t *ccv)
             if (v->data[i + 1] >= '1' && v->data[i + 1] <= '9') {
                 nc++;
 
-            } 
-            else {
+            } else {
                 nv++;
             }
         }
@@ -314,7 +313,7 @@ ngx_http_set_predicate_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-//统计$变量的个数
+
 ngx_uint_t
 ngx_http_script_variables_count(ngx_str_t *value)
 {
@@ -645,15 +644,12 @@ void *
 ngx_http_script_start_code(ngx_pool_t *pool, ngx_array_t **codes, size_t size)
 {
     if (*codes == NULL) {
-        //codes数组中每个元素只占1个字节
         *codes = ngx_array_create(pool, 256, 1);
         if (*codes == NULL) {
             return NULL;
         }
     }
 
-    //size 就是类似ngx_http_script_value_code_t表示的脚本指令结构体所占用的内存字节数
-    //直接创建size个数组元素，仅用来存储1个表示指令的结构体
     return ngx_array_push_n(*codes, size);
 }
 
@@ -1649,7 +1645,7 @@ ngx_http_script_complex_value_code(ngx_http_script_engine_t *e)
     e->sp++;
 }
 
-//处理变量值的编译执行，栈里先是存变量的值，接着是变量的名
+
 void
 ngx_http_script_value_code(ngx_http_script_engine_t *e)
 {
@@ -1657,7 +1653,6 @@ ngx_http_script_value_code(ngx_http_script_engine_t *e)
 
     code = (ngx_http_script_value_code_t *) e->ip;
 
-    //把ip移动到下一个指令结构体的地址上
     e->ip += sizeof(ngx_http_script_value_code_t);
 
     e->sp->len = code->text_len;
@@ -1665,12 +1660,11 @@ ngx_http_script_value_code(ngx_http_script_engine_t *e)
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, e->request->connection->log, 0,
                    "http script value: \"%v\"", e->sp);
-    //printf("varible value = %s \r\n",e->sp->data);
-    //栈自动右移
+
     e->sp++;
 }
 
-//处理变量名的编译执行
+
 void
 ngx_http_script_set_var_code(ngx_http_script_engine_t *e)
 {
@@ -1679,34 +1673,17 @@ ngx_http_script_set_var_code(ngx_http_script_engine_t *e)
 
     code = (ngx_http_script_var_code_t *) e->ip;
 
-    //ip移到下一个待执行的脚本指令
     e->ip += sizeof(ngx_http_script_var_code_t);
 
     r = e->request;
 
-    //把栈左移，指向 ngx_http_script_value_code 设置的那个纯字符串的变量值
     e->sp--;
 
     r->variables[code->index].len = e->sp->len;
     r->variables[code->index].valid = 1;
     r->variables[code->index].no_cacheable = 0;
     r->variables[code->index].not_found = 0;
-    r->variables[code->index].data = e->sp->data;   //给变量赋值
-
-
-    ngx_http_variable_t        *v;
-    ngx_http_core_main_conf_t  *cmcf;
-
-    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
-
-    v = cmcf->variables.elts;
-    
-    //取变量值的方法
-    //ngx_http_variable_value_t *vv = ngx_http_get_indexed_variable(r,code->index);
-    //printf("value = %s index = %ld \r\n",vv->data,code->index);
-
-    printf("index = %ld value = %s name = %s namelen = %ld \r\n",
-                    code->index,e->sp->data,v[code->index].name.data,v[code->index].name.len);      //根据索引取变量名的方法
+    r->variables[code->index].data = e->sp->data;
 
 #if (NGX_DEBUG)
     {
@@ -1734,13 +1711,10 @@ ngx_http_script_var_set_handler_code(ngx_http_script_engine_t *e)
 
     code = (ngx_http_script_var_handler_code_t *) e->ip;
 
-    //将ip移动到下一条待执行的指令地址
     e->ip += sizeof(ngx_http_script_var_handler_code_t);
 
-    //把栈左移，指向 ngx_http_script_value_code 设置的那个纯字符串的变量值
     e->sp--;
 
-    //将请求、变量的值传递给 set_handler 方法执行它
     code->handler(e->request, e->sp, code->data);
 }
 

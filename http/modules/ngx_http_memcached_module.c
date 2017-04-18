@@ -177,7 +177,6 @@ ngx_http_memcached_handler(ngx_http_request_t *r)
         return NGX_HTTP_NOT_ALLOWED;
     }
 
-    //丢弃请求包体，对请求包体并不关心
     rc = ngx_http_discard_request_body(r);
 
     if (rc != NGX_OK) {
@@ -188,30 +187,25 @@ ngx_http_memcached_handler(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    //1、创建upstream数据结构
     if (ngx_http_upstream_create(r) != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    //2、设置模块的tag和schema。schema现在只会用于日志，tag会用于buf_chain管理
     u = r->upstream;
 
     ngx_str_set(&u->schema, "memcached://");
     u->output.tag = (ngx_buf_tag_t) &ngx_http_memcached_module;
 
-    //3、设置upstream的后端服务器列表数据结构
     mlcf = ngx_http_get_module_loc_conf(r, ngx_http_memcached_module);
+
     u->conf = &mlcf->upstream;
 
-    //4、设置upstream回调函数
-    u->create_request = ngx_http_memcached_create_request;//用于构建发往memcached服务器的请求报文
+    u->create_request = ngx_http_memcached_create_request;
     u->reinit_request = ngx_http_memcached_reinit_request;
-    u->process_header = ngx_http_memcached_process_header;//处理memcached服务器返回来的相应头部，
-                                                          //计算响应体的长度，判断请求访问的状态（是否成功）。
+    u->process_header = ngx_http_memcached_process_header;
     u->abort_request = ngx_http_memcached_abort_request;
     u->finalize_request = ngx_http_memcached_finalize_request;
 
-    //5、创建并设置upstream环境数据结构
     ctx = ngx_palloc(r->pool, sizeof(ngx_http_memcached_ctx_t));
     if (ctx == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -219,27 +213,20 @@ ngx_http_memcached_handler(ngx_http_request_t *r)
 
     ctx->request = r;
 
-    //将新建的上下文与请求关联起来
     ngx_http_set_ctx(r, ctx, ngx_http_memcached_module);
 
-    //指定upstream的 input_filter_init 和 input_filter
     u->input_filter_init = ngx_http_memcached_filter_init;
-
-    //将upstream收到的各个响应包挂入reuqest的out_buf中，同时在这里会判断包体的接收是否结束
     u->input_filter = ngx_http_memcached_filter;
     u->input_filter_ctx = ctx;
 
-    //这里必须将count成员加1
     r->main->count++;
 
-    //6、完成upstream初始化并进行收尾工作
     ngx_http_upstream_init(r);
 
     return NGX_DONE;
 }
 
-//很简单的按照设置的内容生成一个key，接着生成一个“get $key”的请求，放在r->upstream->request_bufs里面。
-//报文格式： GET URI \r\n
+
 static ngx_int_t
 ngx_http_memcached_create_request(ngx_http_request_t *r)
 {
@@ -251,10 +238,8 @@ ngx_http_memcached_create_request(ngx_http_request_t *r)
     ngx_http_variable_value_t      *vv;
     ngx_http_memcached_loc_conf_t  *mlcf;
 
-    //获取模块的location的配置结构体
     mlcf = ngx_http_get_module_loc_conf(r, ngx_http_memcached_module);
 
-    //根据设置的变量索引，得到变量
     vv = ngx_http_get_indexed_variable(r, mlcf->index);
 
     if (vv == NULL || vv->not_found || vv->len == 0) {
@@ -263,42 +248,31 @@ ngx_http_memcached_create_request(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    //计算指令长度
     escape = 2 * ngx_escape_uri(NULL, vv->data, vv->len, NGX_ESCAPE_MEMCACHED);
 
-    //计算发给memcached服务器的请求的报文长度
     len = sizeof("get ") - 1 + vv->len + escape + sizeof(CRLF) - 1;
 
-    //创建一个 nginx_buf_t 
     b = ngx_create_temp_buf(r->pool, len);
     if (b == NULL) {
         return NGX_ERROR;
     }
 
-    //创建一个ngx_chain_t
     cl = ngx_alloc_chain_link(r->pool);
     if (cl == NULL) {
         return NGX_ERROR;
     }
 
-    cl->buf = b;        //新建立的ngx_buf_t 关联到ngx_chain_t
+    cl->buf = b;
     cl->next = NULL;
 
-    //把请求放到r->upstream->request_bufs里面去
     r->upstream->request_bufs = cl;
 
-    //写入get 关键字
-    *b->last++ = 'g'; 
-    *b->last++ = 'e'; 
-    *b->last++ = 't'; 
-    *b->last++ = ' ';
+    *b->last++ = 'g'; *b->last++ = 'e'; *b->last++ = 't'; *b->last++ = ' ';
 
-    //拿到模块的上下文
     ctx = ngx_http_get_module_ctx(r, ngx_http_memcached_module);
 
     ctx->key.data = b->last;
 
-    //写入url
     if (escape == 0) {
         b->last = ngx_copy(b->last, vv->data, vv->len);
 
@@ -312,14 +286,12 @@ ngx_http_memcached_create_request(ngx_http_request_t *r)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http memcached request: \"%V\"", &ctx->key);
 
-    //设置报文结束标志\r\n
-    *b->last++ = CR; 
-    *b->last++ = LF;
+    *b->last++ = CR; *b->last++ = LF;
 
     return NGX_OK;
 }
 
-//无需初始化
+
 static ngx_int_t
 ngx_http_memcached_reinit_request(ngx_http_request_t *r)
 {
@@ -328,8 +300,8 @@ ngx_http_memcached_reinit_request(ngx_http_request_t *r)
 
 
 static ngx_int_t
-ngx_http_memcached_process_header(ngx_http_request_t *r)    //模块的业务重点函数
-{                                                           //process_header的重要职责是将后端服务器返回的状态翻译成返回给客户端的状态
+ngx_http_memcached_process_header(ngx_http_request_t *r)
+{
     u_char                         *p, *start;
     ngx_str_t                       line;
     ngx_uint_t                      flags;
@@ -340,14 +312,13 @@ ngx_http_memcached_process_header(ngx_http_request_t *r)    //模块的业务重
 
     u = r->upstream;
 
-    //在收到的数据中查找 \n 字符
     for (p = u->buffer.pos; p < u->buffer.last; p++) {
         if (*p == LF) {
             goto found;
         }
     }
 
-    return NGX_AGAIN;   //如果没找到就继续读数据，直到读到 \n 为止
+    return NGX_AGAIN;
 
 found:
 
@@ -369,7 +340,6 @@ found:
     ctx = ngx_http_get_module_ctx(r, ngx_http_memcached_module);
     mlcf = ngx_http_get_module_loc_conf(r, ngx_http_memcached_module);
 
-    //报文头返回VALUE关键字，表明memcached服务器中有相关数据内容
     if (ngx_strncmp(p, "VALUE ", sizeof("VALUE ") - 1) == 0) {
 
         p += sizeof("VALUE ") - 1;
@@ -395,7 +365,7 @@ found:
 
         while (*p) {
             if (*p++ == ' ') {
-                if (mlcf->gzip_flag) {      //如果设置了压缩标志位
+                if (mlcf->gzip_flag) {
                     goto flags;
                 } else {
                     goto length;
@@ -434,8 +404,7 @@ found:
         start = p;
         p = line.data + line.len;
 
-        //计算出相应报文的长度
-        u->headers_in.content_length_n = ngx_atoof(start, p - start);//设置返回给客户端的响应的长度
+        u->headers_in.content_length_n = ngx_atoof(start, p - start);
         if (u->headers_in.content_length_n == NGX_ERROR) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                           "memcached sent invalid length in response \"%V\" "
@@ -451,7 +420,6 @@ found:
         return NGX_OK;
     }
 
-    //当返回END\x0d时，表明memcached服务器中没有该内容
     if (ngx_strcmp(p, "END\x0d") == 0) {
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                       "key: \"%V\" was not found by memcached", &ctx->key);
@@ -473,7 +441,7 @@ no_valid:
     return NGX_HTTP_UPSTREAM_INVALID_HEADER;
 }
 
-//修正从后端服务器收到的内容长度。因为在处理header时没有加上这部分长度
+
 static ngx_int_t
 ngx_http_memcached_filter_init(void *data)
 {
@@ -494,7 +462,7 @@ ngx_http_memcached_filter_init(void *data)
     return NGX_OK;
 }
 
-//将从后端服务器收到的正文有效内容封装成ngx_chain_t，并加在u->out_bufs末尾
+
 static ngx_int_t
 ngx_http_memcached_filter(void *data, ssize_t bytes)
 {
@@ -508,8 +476,6 @@ ngx_http_memcached_filter(void *data, ssize_t bytes)
     u = ctx->request->upstream;
     b = &u->buffer;
 
-    //该分支意味着有部分的ngx_http_memcached_end在上次尚未接收
-	//完毕，在此次进行接收
     if (u->length == (ssize_t) ctx->rest) {
 
         if (ngx_strncmp(b->last,
@@ -540,7 +506,6 @@ ngx_http_memcached_filter(void *data, ssize_t bytes)
         ll = &cl->next;
     }
 
-    //从upstream的free_bufs链表中取出一个chain来使用
     cl = ngx_chain_get_free_buf(ctx->request->pool, &u->free_bufs);
     if (cl == NULL) {
         return NGX_ERROR;
@@ -732,7 +697,6 @@ ngx_http_memcached_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_memzero(&u, sizeof(ngx_url_t));
 
-    //拿到配置的url，也就是Memcached Server的地址+端口
     u.url = value[1];
     u.no_resolve = 1;
 
@@ -743,15 +707,12 @@ ngx_http_memcached_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
 
-    //被注册到了请求包处理11个阶段的content phase阶段
-    clcf->handler = ngx_http_memcached_handler; //upstream模块的定式：指定一个handler，
-                                                //配置该模块才会执行该模块
+    clcf->handler = ngx_http_memcached_handler;
 
     if (clcf->name.data[clcf->name.len - 1] == '/') {
         clcf->auto_redirect = 1;
     }
 
-    //查询变量 memcached_key 的索引，如果没有该变量，则创建该变量
     mlcf->index = ngx_http_get_variable_index(cf, &ngx_http_memcached_key);
 
     if (mlcf->index == NGX_ERROR) {

@@ -18,7 +18,7 @@
 
 typedef struct {
     ngx_array_t       *from;     /* array of ngx_cidr_t */
-    ngx_uint_t         type;    //指定存放真实用户IP的请求头
+    ngx_uint_t         type;
     ngx_uint_t         hash;
     ngx_str_t          header;
     ngx_flag_t         recursive;
@@ -59,14 +59,14 @@ static ngx_command_t  ngx_http_realip_commands[] = {
 
     { ngx_string("set_real_ip_from"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_http_realip_from,             //指定一个信任的IP地址，为反向代理服务器IP地址
+      ngx_http_realip_from,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       NULL },
 
     { ngx_string("real_ip_header"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_http_realip,                  //指定真实的用户IP所保存在的请求头，例如：X-Forwarded-For
+      ngx_http_realip,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       NULL },
@@ -161,14 +161,14 @@ ngx_http_realip_handler(ngx_http_request_t *r)
             return NGX_DECLINED;
         }
 
-        value = &r->headers_in.x_real_ip->value;    //从 X-Real-IP 请求头中取出IP
+        value = &r->headers_in.x_real_ip->value;
         xfwd = NULL;
 
         break;
 
     case NGX_HTTP_REALIP_XFWD:
 
-        xfwd = &r->headers_in.x_forwarded_for;      //从 X-Forwarded-For 请求头中取出IP
+        xfwd = &r->headers_in.x_forwarded_for;
 
         if (xfwd->elts == NULL) {
             return NGX_DECLINED;
@@ -180,7 +180,7 @@ ngx_http_realip_handler(ngx_http_request_t *r)
 
     case NGX_HTTP_REALIP_PROXY:
 
-        value = &r->connection->proxy_protocol_addr;    // 从 proxy_protocol 取出IP
+        value = &r->connection->proxy_protocol_addr;
 
         if (value->len == 0) {
             return NGX_DECLINED;
@@ -233,15 +233,14 @@ found:
     addr.socklen = c->socklen;
     /* addr.name = c->addr_text; */
 
-    //从 xfwd 数组中查找 ，并且不在 rlcf->from中的Ip，返回到addr中
-    if (ngx_http_get_forwarded_addr(r, &addr, xfwd, value, rlcf->from,rlcf->recursive)
+    if (ngx_http_get_forwarded_addr(r, &addr, xfwd, value, rlcf->from,
+                                    rlcf->recursive)
         != NGX_DECLINED)
     {
         if (rlcf->type == NGX_HTTP_REALIP_PROXY) {
             ngx_inet_set_port(addr.sockaddr, c->proxy_protocol_port);
         }
 
-        //设置真实的用户IP到请求头中
         return ngx_http_realip_set_addr(r, &addr);
     }
 
@@ -259,13 +258,12 @@ ngx_http_realip_set_addr(ngx_http_request_t *r, ngx_addr_t *addr)
     ngx_pool_cleanup_t     *cln;
     ngx_http_realip_ctx_t  *ctx;
 
-    //分配释放函数的内存，并返回地址,大小为释放函数用到的参数的大小
     cln = ngx_pool_cleanup_add(r->pool, sizeof(ngx_http_realip_ctx_t));
     if (cln == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    ctx = cln->data;    //取出保存在cleanup的data中的 ctx 
+    ctx = cln->data;
 
     c = r->connection;
 
@@ -313,7 +311,7 @@ ngx_http_realip_cleanup(void *data)
     c->addr_text = ctx->addr_text;
 }
 
-//向信任列表中添加一个IP地址，如果信任列表为空，则创建一个信任列表
+
 static char *
 ngx_http_realip_from(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -326,7 +324,8 @@ ngx_http_realip_from(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value = cf->args->elts;
 
     if (rlcf->from == NULL) {
-        rlcf->from = ngx_array_create(cf->pool, 2,sizeof(ngx_cidr_t));
+        rlcf->from = ngx_array_create(cf->pool, 2,
+                                      sizeof(ngx_cidr_t));
         if (rlcf->from == NULL) {
             return NGX_CONF_ERROR;
         }
@@ -376,27 +375,24 @@ ngx_http_realip(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
-    //如果真实IP存放在 X-Real-IP 请求头中
     if (ngx_strcmp(value[1].data, "X-Real-IP") == 0) {
         rlcf->type = NGX_HTTP_REALIP_XREALIP;
         return NGX_CONF_OK;
     }
 
-    //如果真实IP存放在 X-Forwarded-For 请求头中
     if (ngx_strcmp(value[1].data, "X-Forwarded-For") == 0) {
         rlcf->type = NGX_HTTP_REALIP_XFWD;
         return NGX_CONF_OK;
     }
 
-    //如果真实IP存放在 proxy_protocol 请求头中
     if (ngx_strcmp(value[1].data, "proxy_protocol") == 0) {
         rlcf->type = NGX_HTTP_REALIP_PROXY;
         return NGX_CONF_OK;
     }
 
-    rlcf->type = NGX_HTTP_REALIP_HEADER;    //默认的请求头类型
+    rlcf->type = NGX_HTTP_REALIP_HEADER;
     rlcf->hash = ngx_hash_strlow(value[1].data, value[1].data, value[1].len);
-    rlcf->header = value[1];    //用户随便指定的一个请求头
+    rlcf->header = value[1];
 
     return NGX_CONF_OK;
 }
@@ -520,7 +516,7 @@ ngx_http_realip_get_module_ctx(ngx_http_request_t *r)
     return ctx;
 }
 
-//获取 realip_remote_addr 变量的方法
+
 static ngx_int_t
 ngx_http_realip_remote_addr_variable(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data)
@@ -541,7 +537,7 @@ ngx_http_realip_remote_addr_variable(ngx_http_request_t *r,
     return NGX_OK;
 }
 
-//获取变量 realip_remote_port 的值的方法
+
 static ngx_int_t
 ngx_http_realip_remote_port_variable(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data)
