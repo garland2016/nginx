@@ -29,5 +29,7 @@ int main(int argc,char* argv[])
 郭梓豪     |  2 
 
 
-openresty/ngx_lua_module：https://github.com/openresty/lua-nginx-module
+资源：
+====
+1、openresty/ngx_lua_module：https://github.com/openresty/lua-nginx-module
 
