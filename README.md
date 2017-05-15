@@ -46,10 +46,10 @@ int main(int argc,char* argv[])
 13、openresty/lua-resty-upload：https://github.com/openresty/lua-resty-upload  
 14、openresty/lua-resty-shdict-simple：https://github.com/openresty/lua-resty-shdict-simple  
 15、openresty/lua-resty-json：https://github.com/cloudflare/lua-resty-json  
-16、openresty/lua-resty-dns：https://github.com/openresty/lua-resty-dns  
+16、openresty/lua-resty-dns：https://github.com/openresty/lua-resty-dns  
 17、openresty/lua-cjson：https://github.com/openresty/lua-cjson  
-18、openresty/lua-cmsgpack：https://github.com/chronolaw/lua-cmsgpack  
-19、openresty/lua-resty-redis：https://github.com/openresty/lua-resty-redis  
+18、openresty/lua-cmsgpack：https://github.com/chronolaw/lua-cmsgpack    
+19、openresty/lua-resty-redis：https://github.com/openresty/lua-resty-redis    
 20、openresty/lua-resty-mysql：https://github.com/openresty/lua-resty-mysql  
 21、lua-resty/ssdb：https://github.com/LazyZhu/lua-resty-ssdb  
 22、lua-resty/snappy：https://github.com/bungle/lua-resty-snappy  
