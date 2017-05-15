@@ -32,4 +32,5 @@ int main(int argc,char* argv[])
 资源：
 ====
 1、openresty/ngx_lua_module：https://github.com/openresty/lua-nginx-module
+2、openresty/best-practices：https://github.com/moonbingbing/openresty-best-practices
 
