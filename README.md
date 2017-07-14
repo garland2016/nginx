@@ -61,4 +61,4 @@ int main(int argc,char* argv[])
 28、SimpleAmqpClient：https://github.com/alanxz/SimpleAmqpClient  
 29、amqpcpp：https://github.com/akalend/amqpcpp    
 30、AMQP-CPP：https://github.com/CopernicaMarketingSoftware/AMQP-CPP   
-
+31、libzmp：https://github.com/zeromq/libzmq  
