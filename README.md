@@ -57,4 +57,6 @@ int main(int argc,char* argv[])
 24、lua-resty/http：https://github.com/pintsized/lua-resty-http  
 25、lua-resty/rsa：https://github.com/doujiang24/lua-resty-rsa  
 26、lua-resty/sniproxy：https://github.com/fffonion/lua-resty-sniproxy  
+27、rabbitmq-c：https://github.com/garland2016/rabbitmq-c
+28、SimpleAmqpClient：https://github.com/alanxz/SimpleAmqpClient
 
