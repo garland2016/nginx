@@ -59,4 +59,6 @@ int main(int argc,char* argv[])
 26、lua-resty/sniproxy：https://github.com/fffonion/lua-resty-sniproxy  
 27、rabbitmq-c：https://github.com/garland2016/rabbitmq-c  
 28、SimpleAmqpClient：https://github.com/alanxz/SimpleAmqpClient  
+29、amqpcpp：https://github.com/akalend/amqpcpp    
+30、AMQP-CPP：https://github.com/CopernicaMarketingSoftware/AMQP-CPP   
 
