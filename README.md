@@ -62,3 +62,4 @@ int main(int argc,char* argv[])
 29、amqpcpp：https://github.com/akalend/amqpcpp    
 30、AMQP-CPP：https://github.com/CopernicaMarketingSoftware/AMQP-CPP   
 31、libzmp：https://github.com/zeromq/libzmq  
+32、annotated-redis：https://github.com/huangz1990/redis-3.0-annotated   
